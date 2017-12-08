@@ -120,73 +120,43 @@ class BpmPanelCtrl extends SvgPanelCtrl {
     }
 
     convertDataToNestedTree(data) {
-        var orgData = data.orgStructure; 
+        var orgCities = data.orgStructureCities;
+        var orgLines = data.orgStructureLines;
         var counters = data.counters;
-        //const formattedData = {};
-        //debugger;
-        const arrCities = [];
-        var arrLines = [];
-        var isNotFoundSameLine = false;
-        orgData.forEach((el, iOrg) => {
-            var path = '';
-            if (el.parentId != null) {
-                path = `${el.parentId + '.' + el.id + '.'}`;
-            } else {
-                path = `${el.id + '.'}`;
-            }
-            path.split('.').filter(id => id).forEach((curValue, i, arrPath) => {
-                // console.log('arrPath',curValue, el);
-                    if (arrPath.length - 1 === i) {
-                        if (el.parentId != null) {                // проверка если это линия
-                            //console.log('childrenLine', arrCounters);
-                            if (isNotFoundSameLine) {
-                                //console.log('counter',counters, el);
-                                var arrCounters = counters.filter(counter => counter.lineId === el.id)  // извлекаем отфильтрованные счётчики
-                                .map((curCount, iCount, counters) => {
-                                    return {
-                                        id: `${el.parentId + '.' + el.id + '.' + curCount.id}`,
-                                        text: curCount.name,
-                                        type: 'counter',
-                                        data: curCount,
-                                        isCounter: true // проверить в данных события дерева
-                                    }
-                                });
-                                //console.log('arrCounters2',arrCounters);
-                                // счётчики
-                                arrLines[iOrg].children = _.uniqBy(arrCounters, 'id');
-                            }
-                        } else {
-                            // города
-                            arrCities.push({
-                                id: `${el.id}`,
-                                text: el.name,
-                                parentId: el.parentId,
-                                type: 'city',
-                                children: arrLines.filter(line => line.parentId === el.id)
-                            })
-                            //console.log('city', el);
-                        }
-                        
-                    } else {
-                        isNotFoundSameLine = (undefined === _.find(arrLines, (line) => {
-                            return line.data.id === el.id;
-                        }));
-                        if (isNotFoundSameLine) {
-                            // линии
-                            arrLines.push({
-                                id: `${el.parentId + '.' + el.id}`,
-                                text: el.name,
-                                parentId: el.parentId,
-                                type: 'line',
-                                data: el,
-                                children: []
-                            });
-                        }
-                    }
+        var arrStructTree = [];
+
+        arrStructTree = _.map(orgCities, city => {
+            var filteredLines = _.filter(orgLines, line => {
+                return _.trim(line.parentId+'') === _.trim(city.id+'');
             })
+            return {
+                id: _.trim(city.id+''),
+                text: city.name,
+                //parentId: obj.parentId,
+                type: 'city',
+                children: _.map(filteredLines, line => {
+                    var filteredCounters = _.filter(counters, counter => {
+                        return  _.trim(counter.lineId+'') ===  _.trim(line.id+'');
+                    })
+                    return {
+                        id: _.trim(line.parentId + '.' + line.id),
+                        text: line.name,
+                        //parentId: line.parentId,
+                        type: 'line',
+                        data: line,
+                        children: _.map(filteredCounters, counter => {
+                            return {
+                                id: _.trim(line.parentId + '.' + counter.lineId + '.' + counter.id),
+                                text: counter.name,
+                                type: 'counter',
+                                data: counter,
+                            }
+                        })
+                    }
+                })
+            }
         })
-        // console.log('arrCities', arrCities);
-        return arrCities
+        return arrStructTree
     }
 
     addSelectedId(data) {
@@ -283,6 +253,7 @@ class BpmPanelCtrl extends SvgPanelCtrl {
                 this.addSelectedId(data);
                 var diffSelectedIds = {
                     statusLines: _.difference(this.panel.selectedLinesId, oldSelectedIds.statusLines),
+                    brandsLines: _.difference(this.panel.selectedLinesId, oldSelectedIds.statusLines),
                     counters: _.difference(this.panel.selectedCountersId, oldSelectedIds.counters)
                 }
                 // console.log('diffSelectedIds', diffSelectedIds);
@@ -304,6 +275,7 @@ class BpmPanelCtrl extends SvgPanelCtrl {
             this.treeStateResumed = true;
             var selectedIds = {
                 statusLines: this.panel.selectedLinesId.slice(),
+                brandsLines: this.panel.selectedLinesId.slice(),
                 counters: this.panel.selectedCountersId.slice(),
             };
             this.issueQueries(datasource, selectedIds);                 // запрашиваем данные выбранных счётчиков
@@ -342,10 +314,12 @@ class BpmPanelCtrl extends SvgPanelCtrl {
 
         // проверям загружено ли дерево
         if (this.treeLoaded) {
+            dataRequest.user.orgName = dataRequest.user.orgName.split('.')[0];
             if (!targets) {
                 // запрос по событию autorefresh
                 dataRequest.targets = {
                     statusLines: this.panel.selectedLinesId,
+                    brandsLines: this.panel.selectedLinesId,
                     counters: this.panel.selectedCountersId
                 };
                 return datasource.query(dataRequest, '/query/targets');
@@ -357,8 +331,6 @@ class BpmPanelCtrl extends SvgPanelCtrl {
                         this.onDataReceived(data.data);
                     });
             }
-
-            
         } else {
             var dataUserRequest = {};
             dataUserRequest.user = dataRequest.user;
@@ -392,7 +364,7 @@ class BpmPanelCtrl extends SvgPanelCtrl {
 
         console.log('onDataReceived', dataReceived);
         // обработка данных дерева
-        if ('counters' in dataReceived && 'orgStructure' in dataReceived) {
+        if ('orgStructureCities' in dataReceived && 'orgStructureLines' in dataReceived && 'counters' in dataReceived) {
             var hashCode = hash.MD5(dataReceived);                              // генерируем хэш код полученных данных
             if (dataReceived.counters && dataReceived.counters.length != 0) {   // проверяем есть ли счётчики
                 this.treeData = this.convertDataToNestedTree(dataReceived);     // преобразуем полученные данные в массив дерева
