@@ -1,0 +1,16 @@
+.grafana-tooltip {
+    background-color: rgba(0, 0, 0, 1);
+}
+
+.modal {
+    position: fixed;
+}
+
+.panel-scroll {
+    overflow: inherit !important;
+}
+
+/* .jstree-default-dark .jstree-clicked {
+    background: none;
+} */
+

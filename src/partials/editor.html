@@ -1,0 +1,76 @@
+<div class="editor-row">
+
+    <div class="section gf-form-group">
+        <h5 class="section-heading">Display</h5>
+        <div class="gf-form">
+            <gf-form-switch class="gf-form"
+                            label="Show graph"
+                            label-class="gf-form-label width-14"
+                            checked="ctrl.panel.showGraph"
+                            on-change="ctrl.onConfigChanged()"></gf-form-switch>
+        </div>
+
+        <div class="gf-form">
+          <label class="gf-form-label width-14">Row Height</label>
+          <input type="number" ng-model="ctrl.panel.rowHeight" class="gf-form-input max-width-5" ng-blur="ctrl.render()" min="1"/>
+        </div>
+        <div class="gf-form">
+          <label class="gf-form-label width-14">Text Size</label>
+          <input type="number" ng-model="ctrl.panel.textSize" class="gf-form-input max-width-5" ng-blur="ctrl.render()" min="1"/>
+        </div>
+
+        <div class="gf-form">
+          <gf-form-switch class="gf-form"
+            label="Write Last Value"
+            label-class="gf-form-label width-14"
+            checked="ctrl.panel.writeLastValue"
+            on-change="ctrl.onConfigChanged()"></gf-form-switch>
+        </div>
+
+        <div class="gf-form">
+          <gf-form-switch class="gf-form"
+            label="Write Metric Names"
+            label-class="gf-form-label width-14"
+            checked="ctrl.panel.writeMetricNames"
+            on-change="ctrl.onConfigChanged()"></gf-form-switch>
+        </div>
+
+        <div class="gf-form">
+          <gf-form-switch class="gf-form"
+            label="Write All Values"
+            label-class="gf-form-label width-14"
+            checked="ctrl.panel.writeAllValues"
+            on-change="ctrl.onConfigChanged()"></gf-form-switch>
+        </div>
+        <!--<div class="gf-form">
+          <gf-form-switch class="gf-form"
+            label="Show values as number"
+            label-class="gf-form-label width-14"
+            checked="ctrl.panel.showValuesAsNumber"
+            on-change="ctrl.onConfigChanged()"></gf-form-switch>
+        </div>-->
+    </div>
+
+    <div class="section gf-form-group">
+        <h5 class="section-heading">Hover tooltip</h5>
+        <div class="gf-form">
+          <gf-form-switch class="gf-form"
+            label="Highlight on Hover"
+            label-class="gf-form-label width-14"
+            checked="ctrl.panel.highlightOnMouseover"
+            on-change="ctrl.onConfigChanged()"></gf-form-switch>
+        </div>
+    </div>
+
+    <div class="section gf-form-group">
+        <h5 class="section-heading">Query</h5>
+        <div class="gf-form">
+          <label class="gf-form-label width-12">Expand 'from' query
+            <info-popover mode="right-normal">This will expand the query to include time before the normal query range</info-popover>
+          </label>
+          <input type="number" ng-model="ctrl.panel.expandFromQueryS" class="gf-form-input max-width-5" ng-blur="ctrl.onConfigChanged()" min="0" />
+          &nbsp; Seconds
+        </div>
+    </div>
+
+</div>

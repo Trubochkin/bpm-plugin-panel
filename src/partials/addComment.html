@@ -1,0 +1,79 @@
+<div class="modal-body">
+    <div class="modal-header">
+        <h2 class="modal-header-title">
+            <i class="fa fa-comment-o"></i>
+            <span class="p-l-1">Write data</span>
+        </h2>
+
+        <a class="modal-header-close" ng-click="dismiss();">
+            <i class="fa fa-remove"></i>
+        </a>
+    </div>
+    <div class="modal-content">
+        <form name="writeForm" ng-submit="ctrl.writeToDB(ctrl.dataWriteDB); dismiss();" class="modal-content" novalidate>
+             <!--<div class="p-t-2">-->
+            <div class="gf-form-group">
+                <div class="gf-form" style="cursor: default">
+                    <!--<span class="gf-form-label">
+                        <i class="fa fa-paint-brush" ></i>
+                    </span>-->
+                    <span class="gf-form-label">
+                        {{ctrl.dataWriteDB.target}}
+                    </span>
+                    <span class="gf-form-label">
+                        {{ctrl.dataWriteDB.datapoint.pointName}}
+                    </span>
+                </div>
+
+                <label class="gf-form-hint">
+                    <small class="gf-form-hint-text muted" ng-cloak>
+                        {{ctrl.dataWriteDB.datapoint.commentText.length || 0}}
+                        / {{ctrl.max}} characters
+                    </small>
+                </label>
+                <div class="gf-form">
+                        <span class="gf-form-label">
+                            <i class="fa fa-commenting" ></i>
+                        </span>
+                        <input
+                            type="text"
+                            name="comment"
+                            class="gf-form-input"
+                            placeholder="Comment &hellip;"
+                            give-focus="true"
+                            ng-model="ctrl.dataWriteDB.datapoint.commentText"
+                            maxlength={{ctrl.max}}
+                            autocomplete="off" />
+                </div>
+                <!--</div>-->
+                <div class="gf-form" ng-style="{color:ctrl.panel.setOwnColors ? '#524a42':'', cursor:ctrl.panel.setOwnColors ? 'not-allowed':'default'}">
+                    <!--<span class="gf-form-label width-12">
+                        Change fill color on DB
+                    </span>-->
+                    <span class="gf-form-label">
+                            <i class="fa fa-paint-brush" ></i>
+                    </span>
+                    <span class="gf-form-label width-12">
+                        Change fill color on DB
+                    </span>
+                    <!--<input class="gf-form-input " type="text" placeholder="color value"
+                           ng-model="ctrl.dataWriteDB.datapoint.fillColor" ng-disabled="ctrl.panel.setOwnColors">-->
+                    <span class="gf-form-label ">
+                        <spectrum-picker ng-model="ctrl.dataWriteDB.datapoint.fillColor"
+                                         options='{disabled: ctrl.panel.setOwnColors}'>
+                        </spectrum-picker>
+                    </span>
+                    <span style="font-size: 12px; color: #b15a18" ng-hide="!ctrl.panel.setOwnColors" ng-cloak>Is Not Active</span>
+                 </div>
+
+                <div class="gf-form-button-row text-center">
+                    <button type="submit" class="btn btn-success" ng-click="ctrl.writeToDB(ctrl.dataWriteDB); dismiss();">Save</button>
+                    <button class="btn btn-inverse" ng-click="dismiss();">Cancel</button>
+                </div>
+            </div>
+        </form>
+
+
+    </div>
+
+</div>
