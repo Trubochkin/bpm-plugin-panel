@@ -7,7 +7,9 @@
 <div class="gf-form-inline">
     <div class="gf-form">
         <div class="btn-group">
-            <button class="dropdown-toggle btn btn-secondary gf-form-btn" data-toggle="dropdown">Choose line
+            <button class="{{'dropdown-toggle btn btn-secondary ' +ctrl.btnShowTree}}" data-toggle="dropdown">
+                <span ng-hide="ctrl.treeLoaded"><i class="fa fa-spinner fa-spin"></i></span>
+                Choose line
                 <span class="caret"></span>
             </button>
             <div id="{{ 'jsTree-' + ctrl.panel.id }}" class="container dropdown-menu" role="menu" style="z-index: 99"></div>
@@ -15,10 +17,10 @@
     </div>
 </div>
 
-    <!-- <div class='svg-spot' style="width:100%;">svg tag</div>
-    <div ng-show="ctrl.panel.showGraph" class="canvas-spot" style="width:100%;"></div> -->
+    <div class="{{'svg-spot id-'+ctrl.panel.id}}" style="width:100%; box-sizing:border-box; position:relative"></div>
 
 
+    <!-- <div ng-show="ctrl.panel.showGraph" class="canvas-spot" style="width:100%;"></div> -->
     <!-- <div ng-show="ctrl.panel.showLegend">
         <div ng-repeat="metric in ctrl.data">
             <span ng-show="ctrl.panel.showLegendNames">{{ metric.name }}: </span>

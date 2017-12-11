@@ -13,6 +13,7 @@ import kbn from 'app/core/utils/kbn';
 import appEvents from 'app/core/app_events';
 import {loadPluginCss} from 'app/plugins/sdk';
 import * as hash from './lib/hash/object_hash';
+import d3 from 'd3';
 
 
 loadPluginCss({
@@ -103,6 +104,7 @@ class BpmPanelCtrl extends SvgPanelCtrl {
         this.updateColorInfo();
 
         this.lightTheme = contextSrv.user.lightTheme;   // boolean
+        this.btnShowTree = 'disabled';                  // active / disabled
         this.treeData = [];
         this.treeLoaded = false;
         this.treeStateResumed = false;
@@ -112,9 +114,8 @@ class BpmPanelCtrl extends SvgPanelCtrl {
             statusLines: {},    // example - {'16.1': {received data}, ...}
             brandsLines: {}     // example - {'16.1': {received data}, ...}
         };
-        this.timeSrv = timeSrv;
+        this.timeSrv = timeSrv; // для сброса таймера автообновления
 
-        //console.log('timeSrv: ', timeSrv);
         //console.log('angular.equals ', angular.equals(treeData, treeData2));
         //console.log('convertDataToNestedTree ', this.convertDataToNestedTree(orgData, counters));
     }
@@ -205,8 +206,8 @@ class BpmPanelCtrl extends SvgPanelCtrl {
     }
 
     jsTreeBuildAction(treeData, datasource) {
-        // отключаем скрытие меню после нажатия
-        $(document).on('click', '.dropdown-menu', function (e) {
+        // отключаем скрытие меню после нажатия (для мобильных, в css убираем div с классом .dropdown-backdrop)
+        $("#jsTree-"+this.panel.id).on('click', function (e) {
             $(this).hasClass('container') && e.stopPropagation();
         });
         // var $treeview = $("#jsTree");
@@ -360,7 +361,7 @@ class BpmPanelCtrl extends SvgPanelCtrl {
     }
 
     onDataReceived(dataReceived) {
-        $(this.canvas).css('cursor', 'pointer');
+        //$(this.canvas).css('cursor', 'pointer');
 
         console.log('onDataReceived', dataReceived);
         // обработка данных дерева
@@ -378,6 +379,7 @@ class BpmPanelCtrl extends SvgPanelCtrl {
                     // return data;
                 }
                 this.jsTreeBuildAction(this.treeData, this.datasource);         // строим дерево
+                this.btnShowTree = 'active';
             }
         } else {
             // сохраняем полученные данные брендов, состояний линий и счётчиков
@@ -395,6 +397,18 @@ class BpmPanelCtrl extends SvgPanelCtrl {
             });
             console.log('this.savedData', this.savedData);
             
+            /* const margin = { top: 40, right: 30, bottom: 30, left: 80 };
+            const outerWidth = 1200;
+            const outerHeight = 200;
+            const width = outerWidth - margin.left - margin.right; // inner
+            const height = outerHeight - margin.top - margin.bottom; // inner
+            const svg = d3.select('.svg-spot.id-'+this.panel.id).append('svg')
+                .attr('height', height + margin.top + margin.bottom)
+                .attr('width', '100%')
+                .attr('id', 'pie')
+                .append('g')
+                .attr('transform', `translate(${margin.left}, ${margin.top})`);
+            console.log('d3: ', d3.version, svg); */
         }
 /*
          var dataGraph = [];
