@@ -3,7 +3,7 @@ import _ from "lodash";
 export default class DistinctPoints {
 
   constructor(name) {
-    this.name = name;
+    this.targetName = name;
     this.changes = [];
     this.legendInfo = [];
 
@@ -72,7 +72,7 @@ export default class DistinctPoints {
     }
 
     // Add a point beyond the controls
-    if(this.last.start < ctrl.range.to) {
+    if(this.last && this.last.start < ctrl.range.to) {
       this.changes.push( {
         val: this.last.val,
         start: ctrl.range.to+1,

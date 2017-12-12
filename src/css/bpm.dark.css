@@ -14,15 +14,22 @@
     background: none;
 } */
 
+/* для корректой работы выпадающего дерева на мобильных устройствах */
 .btn-group.open .dropdown-backdrop {
     display:none;
 }
 
-/* .svg-spot svg{
+div.svg-spot{
+    overflow: inherit !important;
+    width: 100%; 
+    position: relative;
+}
+
+.svg-spot svg{
     background-color: #5e5e5e;
     box-sizing: inherit;
     display: inline-block;
-    position: abslute;
+    /* position: abslute; */
     vertical-align: baseline;
-} */
+}
 

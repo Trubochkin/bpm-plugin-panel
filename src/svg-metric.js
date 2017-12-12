@@ -32,35 +32,6 @@ export class SvgPanelCtrl extends MetricsPanelCtrl {
         // console.log('$tooltip: ', this.$tooltip)
     }
 
-    /* tree_toggle(event) {
-        console.log(window.event);
-        // event.preventDefault();
-        // event.stopPropagation();
-        event = event || window.event
-        var clickedElem = event.target || event.srcElement
-    
-        if (!this.hasClass(clickedElem, 'expand')) {
-            return // клик не там
-        }
-    
-        // Node, на который кликнули
-        var node = clickedElem.parentNode
-        if (this.hasClass(node, 'expandLeaf')) {
-            return // клик на листе
-        }
-    
-        // определить новый класс для узла
-        var newClass = this.hasClass(node, 'expandOpen') ? 'expandClosed' : 'expandOpen'
-        // заменить текущий класс на newClass
-        // регексп находит отдельно стоящий open|close и меняет на newClass
-        var re =  /(^|\s)(expandOpen|expandClosed)(\s|$)/
-        node.className = node.className.replace(re, '$1'+newClass+'$3')
-    }
-
-    hasClass(elem, className) {
-        return new RegExp("(^|\\s)"+className+"(\\s|$)").test(elem.className)
-    } */
-
     onPanelInitalized() {
         //console.log("onPanelInitalized()");
         $('.panel-scroll').css({'max-height': (500) +'px'});
@@ -119,18 +90,17 @@ export class SvgPanelCtrl extends MetricsPanelCtrl {
      console.log( "CANVAS Range", range );
      }*/
 
-    /* link(scope, elem, attrs, ctrl) {
-        //console.log( 'panel-canvasMetric-link-elem', elem);
-        var timeMouseDown = 0;
+    link(scope, elem, attrs, ctrl) {
+        console.log( 'panel-canvasMetric-link-elem', elem);
+        this.svgSpot = elem.find('.svg-spot')[0];
+       /*  var timeMouseDown = 0;
         this.wrap = elem.find('.canvas-spot')[0];
         this.canvas = document.createElement("canvas");
         this.wrap.appendChild(this.canvas);
-
         $(this.canvas).css('cursor', 'pointer');
         $(this.wrap).css('width', '100%');
-
-        this.context = this.canvas.getContext('2d');
-
+        this.context = this.canvas.getContext('2d'); */
+    /* 
         this.canvas.addEventListener('mouseenter', (evt) => {
             if (this.mouse.down && !evt.buttons) {
                 this.mouse.position = null;
@@ -175,7 +145,52 @@ export class SvgPanelCtrl extends MetricsPanelCtrl {
                 $(this.canvas).css('cursor', 'pointer');
             }
         }, false);
+        this.canvas.addEventListener('mouseenter', (evt) => {
+            if (this.mouse.down && !evt.buttons) {
+                this.mouse.position = null;
+                this.mouse.down = null;
+                this.render();
+                this.$tooltip.detach();
+                appEvents.emit('graph-hover-clear');
+            }
+            $(this.canvas).css('cursor', 'pointer');
+        }, false);
 
+        this.canvas.addEventListener('mouseout', (evt) => {
+            if (this.mouse.down == null) {
+                this.mouse.position = null;
+                this.render();
+                this.$tooltip.detach();
+                appEvents.emit('graph-hover-clear');
+            } else {
+                this.$tooltip.detach();
+                appEvents.emit('graph-hover-clear');
+            }
+        }, false);
+
+        this.canvas.addEventListener('mousemove', (evt) => {
+            this.mouse.position = this.getMousePosition(evt);
+            var info = {
+                pos: {
+                    pageX: evt.pageX,
+                    pageY: evt.pageY,
+                    x: this.mouse.position.ts,
+                    y: this.mouse.position.y,
+                    panelRelY: this.mouse.position.yRel,
+                    panelRelX: this.mouse.position.xRel
+                },
+                evt: evt,
+                panel: this.panel
+            };
+            appEvents.emit('graph-hover', info);
+            if (this.mouse.down != null) {
+                $(this.canvas).css('cursor', 'col-resize');
+            } else {
+                $(this.canvas).css('cursor', 'pointer');
+            }
+        }, false); */
+
+    /* 
         this.canvas.addEventListener('mousedown', (evt) => {
             timeMouseDown = performance.now();
             this.mouse.down = this.getMousePosition(evt);
@@ -322,7 +337,7 @@ export class SvgPanelCtrl extends MetricsPanelCtrl {
         //   this.$tooltip.destroy();
         //   elem.off();
         //   elem.remove();
-        // });
-    } */
+        // }); */
+    }
 }
 

@@ -100,6 +100,7 @@ class BpmPanelCtrl extends SvgPanelCtrl {
         this.events.on('render', this.onRender.bind(this));
         this.events.on('data-received', this.onDataReceived.bind(this));
         this.events.on('data-error', this.onDataError.bind(this));
+        this.events.on('init-panel-actions', this.onInitPanelActions.bind(this));
         //this.events.on('refresh', this.onRefresh.bind(this));
         this.updateColorInfo();
 
@@ -118,6 +119,20 @@ class BpmPanelCtrl extends SvgPanelCtrl {
 
         //console.log('angular.equals ', angular.equals(treeData, treeData2));
         //console.log('convertDataToNestedTree ', this.convertDataToNestedTree(orgData, counters));
+    }
+
+    onInitEditMode() {
+        this.addEditorTab('Options', 'public/plugins/test1-panel/partials/editor.html', 2);
+        this.addEditorTab('Legend', 'public/plugins/test1-panel/partials/legend.html', 3);
+        this.addEditorTab('Colors', 'public/plugins/test1-panel/partials/colors.html', 4);
+        this.addEditorTab('Mappings', 'public/plugins/test1-panel/partials/mappings.html', 5);
+        this.editorTabIndex = 1;
+        this.refresh();
+    }
+
+    onInitPanelActions(actions) {
+        actions.push({text: 'Export CSV', click: 'ctrl.exportCsv()'});
+        actions.push({text: 'Toggle legend', click: 'ctrl.toggleLegend()'});
     }
 
     convertDataToNestedTree(data) {
@@ -206,7 +221,7 @@ class BpmPanelCtrl extends SvgPanelCtrl {
     }
 
     jsTreeBuildAction(treeData, datasource) {
-        // отключаем скрытие меню после нажатия (для мобильных, в css убираем div с классом .dropdown-backdrop)
+        // отключаем скрытие меню после нажатия (для мобильных в css убираем div с классом .dropdown-backdrop)
         $("#jsTree-"+this.panel.id).on('click', function (e) {
             $(this).hasClass('container') && e.stopPropagation();
         });
@@ -221,7 +236,7 @@ class BpmPanelCtrl extends SvgPanelCtrl {
                 "themes" : {
                     "dots" : true,              // соединяющие точки дерева
                     "name" : this.lightTheme ? "default" : "default-dark",    // выбор темы
-                    "responsive" : false,        // для мобильных экранов
+                    "responsive" : true,        // для мобильных экранов
                     "stripes" : false            // фоновая зебра
                 },
                 "multiple" : true,              // multiselection
@@ -238,8 +253,6 @@ class BpmPanelCtrl extends SvgPanelCtrl {
             this.treeLoaded = true;                             
             var state = Object.assign({}, this.panel.treeState);
             data.instance.set_state(state);                             // возобновляем состояние дерева (после вызывает событие set_state)
-            // console.log('treeReady', e, data, this.panel.treeState);
-            //this.issueQueries(datasource);                            // запрашиваем данные выбранных счётчиков
 
         }).on('changed.jstree', (e, data) => {
             // console.log('changed', data);
@@ -283,7 +296,6 @@ class BpmPanelCtrl extends SvgPanelCtrl {
         });
     }
 
-    // Copied from Metrics Panel, only used to expand the 'from' query
     issueQueries(datasource, targets) {
         //console.log('Panel-issueQueries: ', typeReq);
         this.datasource = datasource;
@@ -327,122 +339,24 @@ class BpmPanelCtrl extends SvgPanelCtrl {
             } else {
                 // запрос по событию выбра в дереве
                 dataRequest.targets = targets;
+                this.loading = true;
                 return datasource.query(dataRequest, '/query/targets')
                     .then(data => {
                         this.onDataReceived(data.data);
+                        this.loading = false;
                     });
             }
         } else {
             var dataUserRequest = {};
             dataUserRequest.user = dataRequest.user;
             return datasource.query(dataUserRequest, '/query/tree')
-            /* .then((data) => {
-                var hashCode = hash.MD5(data.data);                                 // генерируем хэш код полученных данных
-                // проверяем есть ли данные счётчиков
-                if (data.data.counters && data.data.counters.length != 0) {
-                    this.treeData = this.convertDataToNestedTree(data.data);        // преобразуем полученные данные в массив дерева
-                    if (this.panel.treeHash != hashCode) {                          // проверяем изменились ли данные дерева (по хэш коду объекта)
-                        //обновляем хэш код и сбрасываем состояние дерева
-                        this.panel.treeHash = hashCode;
-                        this.panel.treeState = {core: {selected: []}};
-                        console.log('panel-treeHash-updated', this);
-                    }
-                    this.jsTreeBuildAction(this.treeData, this.datasource);         // строим дерево
-                    return data;
-                }
-            }, */
             .catch (err => {
                 //this.error = err.data.error + " [" + err.status + "]";
-                this.alertSrv.set('No connection', '"tree" data wasn\'t loaded', 'warning', 6000); //error, warning, success, info
-                console.warn("Server unavailable. Tree wasn't loaded", err);
+                this.alertSrv.set('Error', 'Data of "counters tree" wasn\'t loaded', 'warning', 6000); //error, warning, success, info
+                console.warn("Data of counters tree wasn\'t loaded", err);
                 return;
             });
         }
-    }
-
-    onDataReceived(dataReceived) {
-        //$(this.canvas).css('cursor', 'pointer');
-
-        console.log('onDataReceived', dataReceived);
-        // обработка данных дерева
-        if ('orgStructureCities' in dataReceived && 'orgStructureLines' in dataReceived && 'counters' in dataReceived) {
-            var hashCode = hash.MD5(dataReceived);                              // генерируем хэш код полученных данных
-            if (dataReceived.counters && dataReceived.counters.length != 0) {   // проверяем есть ли счётчики
-                this.treeData = this.convertDataToNestedTree(dataReceived);     // преобразуем полученные данные в массив дерева
-                if (this.panel.treeHash != hashCode) {                          // проверяем изменились ли данные дерева (по хэш коду объекта)
-                    //обновляем хэш код и сбрасываем состояние дерева
-                    this.panel.treeHash = hashCode;
-                    this.panel.treeState = {/* core: {selected: []} */};
-                    this.panel.selectedCountersId = [];
-                    this.panel.selectedLinesId = [];
-                    console.log('%c The Tree was changed! Save it ', 'background: blue; color: yellow');
-                    // return data;
-                }
-                this.jsTreeBuildAction(this.treeData, this.datasource);         // строим дерево
-                this.btnShowTree = 'active';
-            }
-        } else {
-            // сохраняем полученные данные брендов, состояний линий и счётчиков
-            _.forEach(dataReceived.brandsLines, obj => {
-                this.savedData.brandsLines[obj.target] = obj;
-                this.savedData.brandsLines[obj.target].targetName = this.convertToTargetName(obj.target);
-            });
-            _.forEach(dataReceived.statusLines, obj => {
-                this.savedData.statusLines[obj.target] = obj;
-                this.savedData.statusLines[obj.target].targetName = this.convertToTargetName(obj.target);
-            });
-            _.forEach(dataReceived.counters, obj => {
-                this.savedData.counters[obj.target] = obj;
-                this.savedData.counters[obj.target].targetName = this.convertToTargetName(obj.target);
-            });
-            console.log('this.savedData', this.savedData);
-            
-            /* const margin = { top: 40, right: 30, bottom: 30, left: 80 };
-            const outerWidth = 1200;
-            const outerHeight = 200;
-            const width = outerWidth - margin.left - margin.right; // inner
-            const height = outerHeight - margin.top - margin.bottom; // inner
-            const svg = d3.select('.svg-spot.id-'+this.panel.id).append('svg')
-                .attr('height', height + margin.top + margin.bottom)
-                .attr('width', '100%')
-                .attr('id', 'pie')
-                .append('g')
-                .attr('transform', `translate(${margin.left}, ${margin.top})`);
-            console.log('d3: ', d3.version, svg); */
-        }
-/*
-         var dataGraph = [];
-        _.forEach(dataList, (metric) => {
-            if ('table' === metric.type) {
-                if ('time' != metric.columns[0].type) {
-                    throw 'Expected a time column from the table format';
-                }
-                var last = null;
-                for (var i = 1; i < metric.columns.length; i++) {
-                    var res = new DistinctPoints(metric.columns[i].text);
-                    for (var j = 0; j < metric.rows.length; j++) {
-                        var row = metric.rows[j];
-                        res.add(row[0], this.formatValue(row[i]));
-                    }
-                    res.finish(this);
-                    dataGraph.push(res);
-                }
-            }
-            else {
-                var res = new DistinctPoints(metric.target);
-                _.forEach(metric.datapoints, (point) => {
-                    // point: [0]-valNum, [1]-time, [2]- valString, [3]-commentText, [4]-fillColor
-                    res.add(+point[1], this.formatValue(point[2]), point[3], point[4], point[0]);
-                });
-                res.finish(this);
-                dataGraph.push(res);
-            }
-        });
-        //console.log( 'data-received', this.data);
-        this.data = dataGraph;
-
-        this.render(); 
-*/
     }
 
     convertToTargetName(targetId) {
@@ -453,30 +367,103 @@ class BpmPanelCtrl extends SvgPanelCtrl {
             var lineName = arrFlatTree[_.findIndex(arrFlatTree, obj => obj.id === _.split(targetId, '.', 2).join('.'))].text;
             if (arrTargetId.length === 3) {
                 var counterName = arrFlatTree[_.findIndex(arrFlatTree, obj => obj.id === _.split(targetId, '.', 3).join('.'))].text;
-                // console.log('NAME-Counter',cityName + '.' + lineName + '.' + counterName);
-                return cityName+'.'+lineName+'.'+counterName;
+                return cityName+' - '+lineName+' - '+counterName;
             }
         } catch (error) {
             console.warn('Failed to convert tree ID to Name. The text of the tree is not found', error);
         }
-        // console.log('NAME-Line',cityName + '.' + lineName);
-        return cityName+'.'+lineName;
+        return cityName+' - '+lineName;
     }
 
-    onDataError(err) {
-        console.log("onDataError-test1", err);
-    }
+    onDataReceived(dataReceived) {
+        //$(this.canvas).css('cursor', 'pointer');
+        this.dataReceived = dataReceived;
+        // console.log('onDataReceived', this.dataReceived);
+        // обработка данных дерева и построение дерева
+        if ('orgStructureCities' in this.dataReceived && 'orgStructureLines' in this.dataReceived && 'counters' in this.dataReceived) {
+            var hashCode = hash.MD5(this.dataReceived);                                     // генерируем хэш код полученных данных
+            if (this.dataReceived.counters && this.dataReceived.counters.length != 0) {     // проверяем есть ли счётчики
+                this.treeData = this.convertDataToNestedTree(this.dataReceived);            // преобразуем полученные данные в массив дерева
+                if (this.panel.treeHash != hashCode) {                                      // проверяем изменились ли данные дерева (по хэш коду объекта)
+                    //обновляем хэш код и сбрасываем состояние дерева
+                    this.panel.treeHash = hashCode;
+                    this.panel.treeState = {/* core: {selected: []} */};
+                    this.panel.selectedCountersId = [];
+                    this.panel.selectedLinesId = [];
+                    console.log('%c Data of tree was changed! Save it ', 'background: blue; color: yellow');
+                }
+                this.jsTreeBuildAction(this.treeData, this.datasource);                      // строим дерево
+                this.btnShowTree = 'active';
+            }
+        }
+        // сохраняем полученные данные брендов, состояний линий и счётчиков
+        if ('brandsLines' in this.dataReceived && 'statusLines' in this.dataReceived && 'counters' in this.dataReceived) {
+            _.forEach(this.dataReceived.brandsLines, obj => {
+                var res = new DistinctPoints(this.convertToTargetName(obj.target));
+                _.forEach(obj.datapoints, (point) => {
+                    // point: [0]-valNum, [1]-time, [2]- valString, [3]-commentText, [4]-fillColor
+                    res.add(+point[1], point[2], point[3], point[4], point[0]);
+                });
+                res.finish(this);
+                this.savedData.brandsLines[obj.target] = res;
+                this.savedData.brandsLines[obj.target].target = obj.target;
+                //this.savedData.brandsLines[obj.target].targetName = this.convertToTargetName(obj.target);
+            });
+            _.forEach(this.dataReceived.statusLines, obj => {
+                var res = new DistinctPoints(this.convertToTargetName(obj.target));
+                _.forEach(obj.datapoints, (point) => {
+                    // point: [0]-valNum, [1]-time, [2]- valString, [3]-commentText, [4]-fillColor
+                    res.add(+point[1], point[2], point[3], point[4], point[0]);
+                });
+                res.finish(this);
+                this.savedData.statusLines[obj.target] = res;
+                this.savedData.statusLines[obj.target].target = obj.target;
+                //this.savedData.statusLines[obj.target].targetName = this.convertToTargetName(obj.target);
+            });
+            _.forEach(this.dataReceived.counters, obj => {
+                this.savedData.counters[obj.target] = obj;
+                this.savedData.counters[obj.target].targetName = this.convertToTargetName(obj.target);
+            });
 
-    onInitEditMode() {
-        this.addEditorTab('Options', 'public/plugins/test1-panel/partials/editor.html', 2);
-        this.addEditorTab('Legend', 'public/plugins/test1-panel/partials/legend.html', 3);
-        this.addEditorTab('Colors', 'public/plugins/test1-panel/partials/colors.html', 4);
-        this.addEditorTab('Mappings', 'public/plugins/test1-panel/partials/mappings.html', 5);
-        this.editorTabIndex = 1;
-        this.refresh();
+            console.log('this.savedData', this.savedData);
+            this.render();
+        }
     }
 
     onRender() {
+        console.log('ON-RENDER', this.savedData);
+        if (!this.savedData) {
+            return;
+        }
+        if (_.isEmpty(this.savedData.counters)) {
+            //console.log('ON-RENDER-NODATA');
+            return;
+        }
+
+        $(this.svgSpot).empty();
+        _.forEach(this.panel.selectedCountersId, targetId => {
+            // console.log('ON-RENDERdata', this.savedData.counters[targetId]);
+            const svg = d3.select(this.svgSpot)
+                .append('div')
+                .attr('id', 'target-'+targetId)
+                //.append('text')
+                .html(this.savedData.counters[targetId].targetName)
+                //.text(this.savedData.counters[targetId].targetName)
+                .append('svg')
+                .attr('height', this.panel.rowHeight)
+                .attr('width', '100%')
+                //.attr('viewBox', '0 0 800 100')
+                .attr('class', 'svg-graph')
+                .append('text')
+                .text(targetId)
+                .attr('x',  '50%')
+                .attr('y', 50)
+                .attr('text-anchor', 'middle')
+                .style('fill', 'white')
+                .style('font-size', `${22}px`);
+                //.attr('transform', `translate(${margin.left}, ${margin.top})`);
+        })
+/* 
         //$('.panel-scroll').css({'max-height': (this.height) +'px'});
         if (this.panel.showGraph) {
             if (!(this.context)) {
@@ -503,10 +490,10 @@ class BpmPanelCtrl extends SvgPanelCtrl {
             ctx.textBaseline = 'middle';
             ctx.font = this.panel.textSize + 'px "Open Sans", Helvetica, Arial, sans-serif';
 
-            /*ctx.shadowOffsetX = 1;
-             ctx.shadowOffsetY = 1;
-             ctx.shadowColor = "rgba(0,0,0,0.3)";
-             ctx.shadowBlur = 3;*/
+            // ctx.shadowOffsetX = 1;
+            //  ctx.shadowOffsetY = 1;
+            //  ctx.shadowColor = "rgba(0,0,0,0.3)";
+            //  ctx.shadowBlur = 3;
 
             var top = 0;
 
@@ -531,9 +518,9 @@ class BpmPanelCtrl extends SvgPanelCtrl {
                     point = metric.changes[i];
                     if (point.start <= this.range.to) {
                         var xt = Math.max(point.start - this.range.from, 0);
-                        /*console.log( 'point', point);*/
+                        // console.log( 'point', point);
                         point.x = (xt / elapsed) * width;
-                        /* ctx.fillStyle = this.getColor( point.val );*/
+                        // ctx.fillStyle = this.getColor( point.val );
                         ctx.fillStyle = this.panel.setOwnColors ? this.getColor(point) : point.color;
                         ctx.fillRect(point.x, top, width, rowHeight);
 
@@ -565,7 +552,7 @@ class BpmPanelCtrl extends SvgPanelCtrl {
                 }
                 ctx.textAlign = 'right';
                 if (this.mouse.down == null) {
-                    /*console.log( 'this.mouse.position', this.mouse.position);*/
+                    // console.log( 'this.mouse.position', this.mouse.position);
                     if (this.panel.highlightOnMouseover && this.mouse.position != null) {
                         point = metric.changes[0];
                         var next = null;
@@ -647,8 +634,13 @@ class BpmPanelCtrl extends SvgPanelCtrl {
                     }
                 }
             }
-        }
+        } 
+*/
         //this.tableRender();
+    }
+
+    onDataError(err) {
+        console.log("onDataError-test1", err);
     }
 
     showLegandTooltip(pos, info) {
@@ -734,7 +726,7 @@ class BpmPanelCtrl extends SvgPanelCtrl {
         return color;
     }
 
-    hashCode(str) {
+    /* hashCode(str) {
         var hash = 0;
         if (str.length == 0) return hash;
         for (var i = 0; i < str.length; i++) {
@@ -743,7 +735,7 @@ class BpmPanelCtrl extends SvgPanelCtrl {
             hash = hash & hash; // Convert to 32bit integer
         }
         return hash;
-    }
+    } */
 
     removeColorMap(map) {
         var index = _.indexOf(this.panel.colorMaps, map);

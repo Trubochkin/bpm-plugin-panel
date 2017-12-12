@@ -8,7 +8,9 @@
     <div class="gf-form">
         <div class="btn-group">
             <button class="{{'dropdown-toggle btn btn-secondary ' +ctrl.btnShowTree}}" data-toggle="dropdown">
-                <span ng-hide="ctrl.treeLoaded"><i class="fa fa-spinner fa-spin"></i></span>
+                <span ng-hide="ctrl.treeLoaded">
+                    <i class="fa fa-spinner fa-spin"></i>
+                </span>
                 Choose line
                 <span class="caret"></span>
             </button>
@@ -17,7 +19,8 @@
     </div>
 </div>
 
-    <div class="{{'svg-spot id-'+ctrl.panel.id}}" style="width:100%; box-sizing:border-box; position:relative"></div>
+    <!-- <div class="{{'svg-spot panelId-'+ctrl.panel.id}}"></div> -->
+    <div class="svg-spot"></div>
 
 
     <!-- <div ng-show="ctrl.panel.showGraph" class="canvas-spot" style="width:100%;"></div> -->
