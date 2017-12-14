@@ -41,7 +41,7 @@ class BpmPanelCtrl extends SvgPanelCtrl {
 
         // Set and populate defaults
         var panelDefaults = {
-            rowHeight: 30,
+            rowHeight: 200,
             textSize: 16,
             valueMaps: [{value: 'null', op: '=', text: 'N/A'}],
             mappingTypes: [
@@ -111,7 +111,7 @@ class BpmPanelCtrl extends SvgPanelCtrl {
         this.treeStateResumed = false;
         this.treeObject = {};
         this.savedData = {
-            counters: {},       // example - {'16.1.2': {received data}, ...}
+            counters: [],       // example - {'16.1.2': {received data}, ...}
             statusLines: {},    // example - {'16.1': {received data}, ...}
             brandsLines: {}     // example - {'16.1': {received data}, ...}
         };
@@ -252,7 +252,7 @@ class BpmPanelCtrl extends SvgPanelCtrl {
         }).on('ready.jstree', (e, data) => {
             this.treeLoaded = true;                             
             var state = Object.assign({}, this.panel.treeState);
-            data.instance.set_state(state);                             // возобновляем состояние дерева (после вызывает событие set_state)
+            data.instance.set_state(state);                             // возобновляем состояние дерева (вызывает событие set_state)
 
         }).on('changed.jstree', (e, data) => {
             // console.log('changed', data);
@@ -272,11 +272,19 @@ class BpmPanelCtrl extends SvgPanelCtrl {
                 }
                 // console.log('diffSelectedIds', diffSelectedIds);
                 if (this.treeStateResumed) {
+                    _.forEach(diffSelectedIds.counters, targetId => {
+                        this.chartAddField(targetId);
+                    });
                     this.issueQueries(datasource, diffSelectedIds);     // запрашиваем данные выбранного счётчика
                 }
             } else if (data.action == "deselect_node") {
                 // console.log('deselect_node', data);
+                var oldSelectedIdsCounters = this.panel.selectedCountersId.slice();
                 this.removeSelectedId(data);
+                var diffSelectedIdsCounters = _.difference(oldSelectedIdsCounters, this.panel.selectedCountersId);
+                _.forEach(diffSelectedIdsCounters, targetId => {
+                    this.chartRemoveField(targetId);
+                });
                 this.onRender();                                        // !!!!!!!!!! to be continued
             }
 
@@ -292,6 +300,9 @@ class BpmPanelCtrl extends SvgPanelCtrl {
                 brandsLines: this.panel.selectedLinesId.slice(),
                 counters: this.panel.selectedCountersId.slice(),
             };
+            _.forEach(selectedIds.counters, targetId => {
+                this.chartAddField(targetId);
+            });
             this.issueQueries(datasource, selectedIds);                 // запрашиваем данные выбранных счётчиков
         });
     }
@@ -359,7 +370,7 @@ class BpmPanelCtrl extends SvgPanelCtrl {
         }
     }
 
-    convertToTargetName(targetId) {
+    convertIdToName(targetId) {
         var arrFlatTree = this.treeObject.jstree().get_json('#', { 'flat': true }); // плоский массив объектов дерева
         var arrTargetId = _.split(targetId, '.');
         try {
@@ -395,34 +406,43 @@ class BpmPanelCtrl extends SvgPanelCtrl {
                 this.jsTreeBuildAction(this.treeData, this.datasource);                      // строим дерево
                 this.btnShowTree = 'active';
             }
+            return;
         }
         // сохраняем полученные данные брендов, состояний линий и счётчиков
         if ('brandsLines' in this.dataReceived && 'statusLines' in this.dataReceived && 'counters' in this.dataReceived) {
             _.forEach(this.dataReceived.brandsLines, obj => {
-                var res = new DistinctPoints(this.convertToTargetName(obj.target));
+                var res = new DistinctPoints(this.convertIdToName(obj.target), obj.target);
                 _.forEach(obj.datapoints, (point) => {
                     // point: [0]-valNum, [1]-time, [2]- valString, [3]-commentText, [4]-fillColor
-                    res.add(+point[1], point[2], point[3], point[4], point[0]);
+                    res.add(point[0], +point[1], point[2], point[3], point[4]);
                 });
                 res.finish(this);
-                this.savedData.brandsLines[obj.target] = res;
-                this.savedData.brandsLines[obj.target].target = obj.target;
-                //this.savedData.brandsLines[obj.target].targetName = this.convertToTargetName(obj.target);
+                var numVal = this.panel.selectedLinesId.indexOf(obj.target);
+                if (numVal > -1) {
+                    this.savedData.statusLines[numVal] = res;
+                }
+                // this.savedData.brandsLines[obj.target] = res;
             });
             _.forEach(this.dataReceived.statusLines, obj => {
-                var res = new DistinctPoints(this.convertToTargetName(obj.target));
+                var res = new DistinctPoints(this.convertIdToName(obj.target), obj.target);
                 _.forEach(obj.datapoints, (point) => {
                     // point: [0]-valNum, [1]-time, [2]- valString, [3]-commentText, [4]-fillColor
-                    res.add(+point[1], point[2], point[3], point[4], point[0]);
+                    res.add(point[0], +point[1], point[2], point[3], point[4]);
                 });
                 res.finish(this);
-                this.savedData.statusLines[obj.target] = res;
-                this.savedData.statusLines[obj.target].target = obj.target;
-                //this.savedData.statusLines[obj.target].targetName = this.convertToTargetName(obj.target);
+                var numVal = this.panel.selectedLinesId.indexOf(obj.target);
+                if (numVal > -1) {
+                    this.savedData.statusLines[numVal] = res;
+                }
+                // this.savedData.statusLines[obj.target] = res;
             });
             _.forEach(this.dataReceived.counters, obj => {
-                this.savedData.counters[obj.target] = obj;
-                this.savedData.counters[obj.target].targetName = this.convertToTargetName(obj.target);
+                var numVal = this.panel.selectedCountersId.indexOf(obj.target);
+                if (numVal > -1) {
+                    this.savedData.counters[numVal] = obj;
+                }
+                // this.savedData.counters[obj.target] = obj;
+                // this.savedData.counters[obj.target].targetName = this.convertIdToName(obj.target);
             });
 
             console.log('this.savedData', this.savedData);
@@ -439,30 +459,7 @@ class BpmPanelCtrl extends SvgPanelCtrl {
             //console.log('ON-RENDER-NODATA');
             return;
         }
-
-        $(this.svgSpot).empty();
-        _.forEach(this.panel.selectedCountersId, targetId => {
-            // console.log('ON-RENDERdata', this.savedData.counters[targetId]);
-            const svg = d3.select(this.svgSpot)
-                .append('div')
-                .attr('id', 'target-'+targetId)
-                //.append('text')
-                .html(this.savedData.counters[targetId].targetName)
-                //.text(this.savedData.counters[targetId].targetName)
-                .append('svg')
-                .attr('height', this.panel.rowHeight)
-                .attr('width', '100%')
-                //.attr('viewBox', '0 0 800 100')
-                .attr('class', 'svg-graph')
-                .append('text')
-                .text(targetId)
-                .attr('x',  '50%')
-                .attr('y', 50)
-                .attr('text-anchor', 'middle')
-                .style('fill', 'white')
-                .style('font-size', `${22}px`);
-                //.attr('transform', `translate(${margin.left}, ${margin.top})`);
-        })
+        this.chartBuildSvg();
 /* 
         //$('.panel-scroll').css({'max-height': (this.height) +'px'});
         if (this.panel.showGraph) {

@@ -2,7 +2,8 @@ import _ from "lodash";
 
 export default class DistinctPoints {
 
-  constructor(name) {
+  constructor(name, id) {
+    this.target = id;
     this.targetName = name;
     this.changes = [];
     this.legendInfo = [];
@@ -14,7 +15,7 @@ export default class DistinctPoints {
 
   // ts: numeric ms,
   // val: is the normalized value
-  add( ts, val, comment, color, numVal) {
+  add(numVal, ts, val, comment, color) {
     if(this.last == null) {
       this.last = {
         numVal: numVal,
@@ -36,7 +37,7 @@ export default class DistinctPoints {
       }
 
       if( (ts > this.last.start) != this.asc ) {
-        console.log('skip out of order point', ts, val);
+        // console.log('skip out of order point', ts, val);
         return;
       }
 
@@ -62,7 +63,7 @@ export default class DistinctPoints {
 
   finish(ctrl) {
     if(this.changes.length<1) {
-      console.log( "no points found!" );
+    //   console.log( "no points found!" );
       /*return;*/
     }
 

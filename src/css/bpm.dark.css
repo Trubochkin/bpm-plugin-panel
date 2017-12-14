@@ -19,17 +19,22 @@
     display:none;
 }
 
-div.svg-spot{
+.charts-spot{
     overflow: inherit !important;
     width: 100%; 
     position: relative;
 }
 
-.svg-spot svg{
-    background-color: #5e5e5e;
+svg {
+    /* background-color: #383838; */
     box-sizing: inherit;
     display: inline-block;
     /* position: abslute; */
     vertical-align: baseline;
 }
 
+div.chartSpot {
+    width: 100%;
+    margin-bottom: 5px;
+    text-align: center;
+}
