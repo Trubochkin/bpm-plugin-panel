@@ -97,7 +97,7 @@ class BpmPanelCtrl extends SvgPanelCtrl {
         };
 
         this.events.on('init-edit-mode', this.onInitEditMode.bind(this));
-        // this.events.on('render', this.onRender.bind(this));
+        this.events.on('render', this.onRender.bind(this));
         this.events.on('data-received', this.onDataReceived.bind(this));
         this.events.on('data-error', this.onDataError.bind(this));
         this.events.on('init-panel-actions', this.onInitPanelActions.bind(this));
