@@ -36,5 +36,10 @@ svg {
 div.chartSpot {
     width: 100%;
     margin-bottom: 5px;
+    /* text-align: center; */
+}
+
+div.chartSpot i{
+    width: 100%;
     text-align: center;
 }

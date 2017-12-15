@@ -97,7 +97,7 @@ class BpmPanelCtrl extends SvgPanelCtrl {
         };
 
         this.events.on('init-edit-mode', this.onInitEditMode.bind(this));
-        this.events.on('render', this.onRender.bind(this));
+        // this.events.on('render', this.onRender.bind(this));
         this.events.on('data-received', this.onDataReceived.bind(this));
         this.events.on('data-error', this.onDataError.bind(this));
         this.events.on('init-panel-actions', this.onInitPanelActions.bind(this));
@@ -111,9 +111,9 @@ class BpmPanelCtrl extends SvgPanelCtrl {
         this.treeStateResumed = false;
         this.treeObject = {};
         this.savedData = {
-            counters: [],       // example - {'16.1.2': {received data}, ...}
-            statusLines: {},    // example - {'16.1': {received data}, ...}
-            brandsLines: {}     // example - {'16.1': {received data}, ...}
+            counters: [],       // example - [{received data}, ...]
+            statusLines: [],    // example - [{received data}, ...]
+            brandsLines: []     // example - [{received data}, ...]
         };
         this.timeSrv = timeSrv; // для сброса таймера автообновления
 
@@ -283,6 +283,10 @@ class BpmPanelCtrl extends SvgPanelCtrl {
                 this.removeSelectedId(data);
                 var diffSelectedIdsCounters = _.difference(oldSelectedIdsCounters, this.panel.selectedCountersId);
                 _.forEach(diffSelectedIdsCounters, targetId => {
+                    console.log('chartRemoveField', targetId);
+                    _.remove(this.savedData.counters, (obj, i) => {
+                        return obj.target === targetId;
+                    });
                     this.chartRemoveField(targetId);
                 });
                 this.onRender();                                        // !!!!!!!!!! to be continued
@@ -353,8 +357,9 @@ class BpmPanelCtrl extends SvgPanelCtrl {
                 this.loading = true;
                 return datasource.query(dataRequest, '/query/targets')
                     .then(data => {
-                        this.onDataReceived(data.data);
                         this.loading = false;
+                        this.onDataReceived(data.data);
+                        // this.render();
                     });
             }
         } else {
@@ -387,9 +392,9 @@ class BpmPanelCtrl extends SvgPanelCtrl {
     }
 
     onDataReceived(dataReceived) {
-        //$(this.canvas).css('cursor', 'pointer');
+        $('svg').css('cursor', 'pointer');
         this.dataReceived = dataReceived;
-        // console.log('onDataReceived', this.dataReceived);
+        console.log('onDataReceived', this.dataReceived);
         // обработка данных дерева и построение дерева
         if ('orgStructureCities' in this.dataReceived && 'orgStructureLines' in this.dataReceived && 'counters' in this.dataReceived) {
             var hashCode = hash.MD5(this.dataReceived);                                     // генерируем хэш код полученных данных
@@ -445,8 +450,8 @@ class BpmPanelCtrl extends SvgPanelCtrl {
                 // this.savedData.counters[obj.target].targetName = this.convertIdToName(obj.target);
             });
 
-            console.log('this.savedData', this.savedData);
-            this.render();
+            // console.log('this.savedData', this.savedData);
+            this.onRender();
         }
     }
 
@@ -459,7 +464,7 @@ class BpmPanelCtrl extends SvgPanelCtrl {
             //console.log('ON-RENDER-NODATA');
             return;
         }
-        this.chartBuildSvg();
+        this.chartBuildSvg(this.savedData);
 /* 
         //$('.panel-scroll').css({'max-height': (this.height) +'px'});
         if (this.panel.showGraph) {

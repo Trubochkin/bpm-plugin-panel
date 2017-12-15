@@ -107,11 +107,13 @@ export class SvgPanelCtrl extends MetricsPanelCtrl {
             // .style('text-align', 'center')
             .style('background', () => this.lightTheme ? '#f8f8f8' : '#292929');
             
-        console.log('ChartD3', chartSpot);
+        // console.log('ChartD3', chartSpot);
         var spotMessage = chartSpot.append('span');
-        spotMessage.append('i').attr('class', 'fa fa-spinner fa-spin');
-        spotMessage.append('span').attr('class', 'msg-no-data')
-            .html(`no data ${targetName}`);
+        spotMessage.append('i')
+            .attr('class', 'fa fa-spinner fa-spin')
+            .style('font-size', '30px');
+        // spotMessage.append('span').attr('class', 'msg-no-data')
+        //  .html(`no data ${targetName}`);
     }
 
     chartRemoveField(targetId) {
@@ -119,37 +121,121 @@ export class SvgPanelCtrl extends MetricsPanelCtrl {
         d3.select(this.chartsSpot)
             .select('#target-'+targetIdCorrect)
             .remove();
-        console.log('Remove-SVG:', targetId)
+        // console.log('Remove-SVG:', targetId)
     }
 
-    chartBuildSvg() {
+    chartBuildSvg(data) {
+        const W = this.chartsSpot.getBoundingClientRect().width,
+            H = this.panel.rowHeight,
+        //Setting up Margins
+        mainMargin = { top: 5, right: 20, bottom: 20, left: 40 },
+        //Widths, Heights
+        width = W - mainMargin.left - mainMargin.right,
+        mainHeight = H - mainMargin.top - mainMargin.bottom;
+        // console.log('rowWidth', width);
+
         $(this.chartsSpot).empty();
-        _.forEach(this.panel.selectedCountersId, targetId => {
-            // console.log('ON-RENDERdata', this.savedData.counters[targetId]);
-            var targetIdCorrect = targetId.split('.').join('\\.');  // экранирование точек для корректной выборки
-            const svg = d3.select(this.chartsSpot)
-                .append('div')
-                .style('font-size', this.panel.textSize+'px')
-                .attr('id', 'target-'+targetId)
-                .attr('class', 'chartSpot')
-                .style('background', () => this.lightTheme ? '#f8f8f8' : '#292929')
-                //.append('text')
-                .html(this.convertIdToName(targetId))
-                //.text(this.savedData.counters[targetId].targetName)
-                .append('svg')
-                .attr('height', this.panel.rowHeight)
-                .attr('width', '100%')
-                //.attr('viewBox', '0 0 800 100')
-                .attr('class', 'svg-graph')
-                .append('text')
-                .text(targetId)
-                .attr('x',  '50%')
-                .attr('y', 50)
-                .attr('text-anchor', 'middle')
-                //.style('fill', 'white')
-                .style('font-size', `${22}px`);
-                //.attr('transform', `translate(${margin.left}, ${margin.top})`);
+        _.forEach(this.panel.selectedCountersId, (targetId, i) => {
+            // console.log('ON-RENDERdata', data);
+            
+            //if (data.counters[i].datapoints.length > 0) {
+                const dataNorm = this.normalizeData(data.counters[i].datapoints);
+                // console.log('dataNorm', dataNorm);
+                const dataExtent = d3.extent(dataNorm, d => d.t);   // [min, max]
+                //Main Chart Scales
+                const mainXScale = d3.scaleTime()
+                    .domain(dataExtent)
+                    .range([0, width]);
+                const mainYScale = d3.scaleLinear()
+                    .domain([0, d3.max(dataNorm, d => d.v) + (d3.max(dataNorm, d => d.v) * 0.1)]) // плюс 10% от максимального
+                    .range([mainHeight, 0]);
+                
+                //Main Chart Axes
+                const mainXAxis = d3.axisBottom().scale(mainXScale),
+                    mainYAxis = d3.axisLeft().scale(mainYScale);
+
+                //Area
+                const mainArea = d3.area()
+                    .x(d => mainXScale(d.t))
+                    .y0(mainHeight)
+                    .y1(d => mainYScale(d.v));
+                    //.curve(d3.curveCatmullRom.alpha(0.3));
+                
+                // var targetIdCorrect = targetId.split('.').join('\\.');  // экранирование точек для корректной выборки
+                const svg = d3.select(this.chartsSpot)
+                    .append('div')
+                    .style('font-size', this.panel.textSize+'px')
+                    .attr('id', 'target-'+targetId)
+                    .attr('class', 'chartSpot')
+                    .style('background', () => this.lightTheme ? '#f8f8f8' : '#292929')
+                    //.append('text')
+                    .html(this.convertIdToName(targetId))
+                    .append('svg')
+                    .attr('height', H)
+                    .attr('width', W)
+                    .attr('class', 'svg-graph')
+                    // .attr('transform', `translate(${mainMargin.left}, ${mainMargin.top})`);
+
+                svg.append('defs')
+                    .append('clipPath')
+                    .attr('id', 'clip-chart')
+                    .append('rect')
+                    .attr('width', width)
+                    .attr('height', mainHeight);
+
+                const main = svg.append('g')
+                    .classed('main', true)
+                    .attr('transform', `translate(${mainMargin.left}, ${mainMargin.top})`);
+
+                main.append('g')
+                    .classed('x axis', true)
+                    .attr('transform', `translate(0, ${mainHeight})`)
+                    .call(mainXAxis);
+        
+                main.append('g')
+                    .classed('y axis', true)
+                    .attr('transform', 'translate(0, 0)')
+                    .call(mainYAxis);
+
+                svg.append('g')
+                    .attr('clip-path', 'url(#chart-area)') // Add reference to clipPath
+                    .attr('class', 'pathChart')
+                    .append('path')
+                    .attr('d', mainArea(dataNorm))
+                    .attr('stroke-width', '2')
+                    .style('fill', '#0b2bdc')
+                    .style('fill-opacity', 0.5)
+                    .attr('transform', `translate(${mainMargin.left}, ${mainMargin.top})`);
+            //}
         })
+    }
+
+    normalizeData(data) {
+        // const dateFrom = this.range.from.clone(),
+        // dateTo = this.range.to.clone()
+        let dataset = _.map(data, (d, i) => {
+            return {
+                t: d[1],
+                v: d[0]
+            }
+        })
+        if (dataset.length) {
+            dataset.unshift(
+                {
+                    t: dataset[0].t - 1,
+                    v: 0,
+                    fake: true
+                }
+            );
+            dataset.push(
+                {
+                    t: dataset[dataset.length - 1].t + 1,
+                    v: 0,
+                    fake: true
+                }
+            );
+        }
+        return dataset;
     }
 
     link(scope, elem, attrs, ctrl) {
