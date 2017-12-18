@@ -64,6 +64,7 @@ class BpmPanelCtrl extends SvgPanelCtrl {
             legendSortBy: '-ms',
             setOwnColors: false,
             showGraph: true,
+            
             treeHash: '',
             treeState: {
                 core: {
@@ -359,7 +360,7 @@ class BpmPanelCtrl extends SvgPanelCtrl {
                     .then(data => {
                         this.loading = false;
                         this.onDataReceived(data.data);
-                        // this.render();
+                        this.onRender();
                     });
             }
         } else {
@@ -450,7 +451,7 @@ class BpmPanelCtrl extends SvgPanelCtrl {
                 // this.savedData.counters[obj.target].targetName = this.convertIdToName(obj.target);
             });
 
-            // console.log('this.savedData', this.savedData);
+            console.log('this.savedData', this.savedData);
             this.onRender();
         }
     }

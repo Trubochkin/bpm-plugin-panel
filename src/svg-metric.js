@@ -34,9 +34,6 @@ export class SvgPanelCtrl extends MetricsPanelCtrl {
 
     onPanelInitalized() {
         //console.log("onPanelInitalized()");
-        $('.panel-scroll').css({
-            'max-height': (100) + 'px'
-        });
         // this.render();
     }
 
@@ -97,122 +94,138 @@ export class SvgPanelCtrl extends MetricsPanelCtrl {
     chartAddField(targetId) {
         // console.log('ChartD3-this:', this);
         var targetName = this.convertIdToName(targetId);
-        var chartSpot = d3.select(this.chartsSpot)
+        var wrapVis = d3.select(this.wrapAllVis)
             .append('div')
             .attr('id', 'target-'+targetId)
-            .attr('class', 'chartSpot')
+            .attr('class', 'wrap-vis')
             //.attr('width', '100%')
             .style('font-size', this.panel.textSize+'px')
             .style('line-height', this.panel.rowHeight+'px')
             // .style('text-align', 'center')
-            .style('background', () => this.lightTheme ? '#f8f8f8' : '#292929');
+            //.style('background', () => this.lightTheme ? '#f8f8f8' : '#292929');
             
-        // console.log('ChartD3', chartSpot);
-        var spotMessage = chartSpot.append('span');
-        spotMessage.append('i')
+        // console.log('ChartD3', wrapVis);
+        var visMessage = wrapVis.append('span');
+        visMessage.append('i')
             .attr('class', 'fa fa-spinner fa-spin')
             .style('font-size', '30px');
-        // spotMessage.append('span').attr('class', 'msg-no-data')
+        // visMessage.append('span').attr('class', 'msg-no-data')
         //  .html(`no data ${targetName}`);
     }
 
     chartRemoveField(targetId) {
         var targetIdCorrect = targetId.split('.').join('\\.');  // экранирование точек для корректной выборки
-        d3.select(this.chartsSpot)
+        d3.select(this.wrapAllVis)
             .select('#target-'+targetIdCorrect)
             .remove();
         // console.log('Remove-SVG:', targetId)
     }
 
     chartBuildSvg(data) {
-        const W = this.chartsSpot.getBoundingClientRect().width,
-            H = this.panel.rowHeight,
-        //Setting up Margins
-        mainMargin = { top: 5, right: 20, bottom: 20, left: 40 },
-        //Widths, Heights
-        width = W - mainMargin.left - mainMargin.right,
-        mainHeight = H - mainMargin.top - mainMargin.bottom;
-        // console.log('rowWidth', width);
+        // ширина и высота всей области SVG
+        const W = this.wrapAllVis.getBoundingClientRect().width,
+            H = this.panel.rowHeight;
 
-        $(this.chartsSpot).empty();
+        // область визуализации с данными (график)
+        const margin = { top: 5, right: 20, bottom: 20, left: 40 };
+        const width = +W - margin.left - margin.right;
+        const height = +H - margin.top - margin.bottom;
+
+        console.log('width, height', width, height);
+
+        $(this.wrapAllVis).empty();
         _.forEach(this.panel.selectedCountersId, (targetId, i) => {
             // console.log('ON-RENDERdata', data);
+            const dataNorm = this.normalizeData(data.counters[i].datapoints);
+            // console.log('dataNorm', dataNorm);
+            const dataExtent = d3.extent(dataNorm, d => d.t);   // [min, max]
+            //Main Chart Scales
+            const xScale = d3.scaleTime()
+                .domain(dataExtent)
+                .range([0, width]);
+            const yScale = d3.scaleLinear()
+                .domain([0, d3.max(dataNorm, d => d.v) + (d3.max(dataNorm, d => d.v) * 0.1)]) // плюс 10% от максимального
+                .range([height, 0]);
             
-            //if (data.counters[i].datapoints.length > 0) {
-                const dataNorm = this.normalizeData(data.counters[i].datapoints);
-                // console.log('dataNorm', dataNorm);
-                const dataExtent = d3.extent(dataNorm, d => d.t);   // [min, max]
-                //Main Chart Scales
-                const mainXScale = d3.scaleTime()
-                    .domain(dataExtent)
-                    .range([0, width]);
-                const mainYScale = d3.scaleLinear()
-                    .domain([0, d3.max(dataNorm, d => d.v) + (d3.max(dataNorm, d => d.v) * 0.1)]) // плюс 10% от максимального
-                    .range([mainHeight, 0]);
-                
-                //Main Chart Axes
-                const mainXAxis = d3.axisBottom().scale(mainXScale),
-                    mainYAxis = d3.axisLeft().scale(mainYScale);
+            // Chart Axes
+            const xAxis = d3.axisBottom().scale(xScale),
+                yAxis = d3.axisLeft().scale(yScale);
 
-                //Area
-                const mainArea = d3.area()
-                    .x(d => mainXScale(d.t))
-                    .y0(mainHeight)
-                    .y1(d => mainYScale(d.v));
-                    //.curve(d3.curveCatmullRom.alpha(0.3));
-                
-                // var targetIdCorrect = targetId.split('.').join('\\.');  // экранирование точек для корректной выборки
-                const svg = d3.select(this.chartsSpot)
-                    .append('div')
-                    .style('font-size', this.panel.textSize+'px')
-                    .attr('id', 'target-'+targetId)
-                    .attr('class', 'chartSpot')
-                    .style('background', () => this.lightTheme ? '#f8f8f8' : '#292929')
-                    //.append('text')
-                    .html(this.convertIdToName(targetId))
-                    .append('svg')
-                    .attr('height', H)
-                    .attr('width', W)
-                    .attr('class', 'svg-graph')
-                    // .attr('transform', `translate(${mainMargin.left}, ${mainMargin.top})`);
+            // Area of chart
+            const area = d3.area()
+                .x(d => xScale(d.t))
+                .y0(height)
+                .y1(d => yScale(d.v));
+                //.curve(d3.curveCatmullRom.alpha(0.3));
 
-                svg.append('defs')
-                    .append('clipPath')
-                    .attr('id', 'clip-chart')
-                    .append('rect')
-                    .attr('width', width)
-                    .attr('height', mainHeight);
+            // Line of chart
+            const line = d3.line()
+                .x(d => xScale(d.t))
+                .y(d => yScale(d.v));
+                //.curve(d3.curveCatmullRom.alpha(0.5));
+            
+            // var targetIdCorrect = targetId.split('.').join('\\.');  // экранирование точек для корректной выборки
+            const svg = d3.select(this.wrapAllVis)
+                .append('div')
+                .style('font-size', this.panel.textSize+'px')
+                .attr('id', 'target-'+targetId)
+                .attr('class', 'wrap-vis')
+                //.style('background', () => this.lightTheme ? '#f8f8f8' : '#292929')
+                //.append('text')
+                .html(this.convertIdToName(targetId))
+                .append('svg')
+                .attr('height', H)
+                .attr('width', W)
+                .attr('class', 'svg-area');
+                // content area of your visualization (note: g elements do NOT have dimensions)
+            const vis = svg.append("g")
+                .attr("transform", `translate(${margin.left},${margin.top})`);
+                // .attr('transform', `translate(${margin.left}, ${margin.top})`);
 
-                const main = svg.append('g')
-                    .classed('main', true)
-                    .attr('transform', `translate(${mainMargin.left}, ${mainMargin.top})`);
+            var clipPath = vis.append('clipPath')
+                .attr('id', 'vis-clip')
+                .append('rect')
+                .attr('width', width)
+                .attr('height', height)
+                .attr("transform", "translate(1, -1)");
 
-                main.append('g')
-                    .classed('x axis', true)
-                    .attr('transform', `translate(0, ${mainHeight})`)
-                    .call(mainXAxis);
-        
-                main.append('g')
-                    .classed('y axis', true)
-                    .attr('transform', 'translate(0, 0)')
-                    .call(mainYAxis);
+            vis.append('g')
+                .classed('x axis', true)
+                .attr('transform', `translate(0, ${height})`)
+                .call(xAxis);
+    
+            vis.append('g')
+                .classed('y axis', true)
+                .attr('transform', 'translate(0, 0)')
+                .call(yAxis);
 
-                svg.append('g')
-                    .attr('clip-path', 'url(#chart-area)') // Add reference to clipPath
-                    .attr('class', 'pathChart')
-                    .append('path')
-                    .attr('d', mainArea(dataNorm))
-                    .attr('stroke-width', '2')
-                    .style('fill', '#0b2bdc')
-                    .style('fill-opacity', 0.5)
-                    .attr('transform', `translate(${mainMargin.left}, ${mainMargin.top})`);
-            //}
+            // Вставка области заливки графика
+            vis.append('g')
+                .attr('clip-path', 'url(#vis-clip)') // задание области видимости
+                .attr('class', 'areaChart')
+                .append('path')
+                .attr('d', area(dataNorm))
+                // .attr('stroke-width', '2px')
+                // .attr('stroke', '#1400C7')
+                .style('fill', '#0b2bdc')
+                .style('fill-opacity', 0.5);
+                //.attr('transform', `translate(${margin.left}, ${margin.top})`);
+            
+            // Вставка линии графика
+            vis.append('g')
+                .attr('clip-path', 'url(#vis-clip)') // задание области видимости
+                .attr('class', 'lineChart')
+                .append('path')
+                .attr('d', line(dataNorm.filter(obj => !obj.fake)))
+                .style('stroke', '#1400C7')
+                .style('stroke-width', 2)
+                .style('fill-opacity', 0);;
         })
     }
 
     normalizeData(data) {
-        // const dateFrom = this.range.from.clone(),
-        // dateTo = this.range.to.clone()
+        const dateFrom = this.range.from.clone(),
+        dateTo = this.range.to.clone()
         let dataset = _.map(data, (d, i) => {
             return {
                 t: d[1],
@@ -221,6 +234,11 @@ export class SvgPanelCtrl extends MetricsPanelCtrl {
         })
         if (dataset.length) {
             dataset.unshift(
+                {
+                    t: new Date(dateFrom).getTime(),
+                    v: 0,
+                    fake: true
+                },
                 {
                     t: dataset[0].t - 1,
                     v: 0,
@@ -232,6 +250,11 @@ export class SvgPanelCtrl extends MetricsPanelCtrl {
                     t: dataset[dataset.length - 1].t + 1,
                     v: 0,
                     fake: true
+                },
+                {
+                    t: new Date(dateTo).getTime(),
+                    v: 0,
+                    fake: true
                 }
             );
         }
@@ -240,7 +263,7 @@ export class SvgPanelCtrl extends MetricsPanelCtrl {
 
     link(scope, elem, attrs, ctrl) {
         // console.log('panel-canvasMetric-link-elem', elem);
-        this.chartsSpot = elem.find('.charts-spot')[0];
+        this.wrapAllVis = elem.find('.wrap-all-vis')[0];
         /*  var timeMouseDown = 0;
         this.wrap = elem.find('.canvas-spot')[0];
         this.canvas = document.createElement("canvas");

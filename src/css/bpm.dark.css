@@ -19,7 +19,7 @@
     display:none;
 }
 
-.charts-spot{
+div.wrap-all-vis{
     overflow: inherit !important;
     width: 100%; 
     position: relative;
@@ -33,13 +33,14 @@ svg {
     vertical-align: baseline;
 }
 
-div.chartSpot {
+div.wrap-vis {
     width: 100%;
     margin-bottom: 5px;
+    background: #292929;
     /* text-align: center; */
 }
 
-div.chartSpot i{
+div.wrap-vis i{
     width: 100%;
     text-align: center;
 }

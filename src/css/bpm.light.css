@@ -19,27 +19,46 @@
     display:none;
 }
 
-.charts-spot{
+div.wrap-all-vis{
     overflow: inherit !important;
     width: 100%; 
     position: relative;
 }
 
 svg {
-    /* background-color: #5e5e5e; */
+    /* background-color: #383838;
     box-sizing: inherit;
     display: inline-block;
     /* position: abslute; */
     vertical-align: baseline;
 }
 
-div.chartSpot {
+div.wrap-vis {
     width: 100%;
     margin-bottom: 5px;
+    background: #f8f8f8;
     /* text-align: center; */
 }
 
-div.chartSpot i{
+div.wrap-vis i{
     width: 100%;
     text-align: center;
+}
+
+.axis {
+    stroke-width: 1;
+}
+
+.axis .tick line {
+    stroke: #272727;
+}
+
+.axis .tick text {
+    fill: #272727;
+    font-size: 0.7rem;
+}
+
+.axis .domain {
+    fill: none;
+    stroke: #272727;
 }
