@@ -1,5 +1,5 @@
 .grafana-tooltip {
-    background-color: rgba(0, 0, 0, 1);
+    background-color: #000000;
 }
 
 .modal {
@@ -20,7 +20,7 @@
 }
 
 div.wrap-all-vis{
-    overflow: inherit !important;
+    /* overflow: inherit !important; */
     width: 100%; 
     position: relative;
 }
@@ -40,7 +40,12 @@ div.wrap-vis {
     /* text-align: center; */
 }
 
-div.wrap-vis i{
+h3.title-wrap-vis {
+    margin-left: 15px;
+    padding-top: 7px;
+}
+
+div.wrap-vis i {
     width: 100%;
     text-align: center;
 }
@@ -50,15 +55,32 @@ div.wrap-vis i{
 }
 
 .axis .tick line {
-    stroke: rgb(255, 255, 255);
+    stroke: #ffffff;
 }
 
 .axis .tick text {
-    fill: rgb(255, 255, 255);
-    font-size: 0.7rem;
+    fill: #ffffff;
+    font-size: 10px;
 }
 
 .axis .domain {
     fill: none;
-    stroke: rgb(255, 255, 255);
+    stroke: #ffffff;
+}
+
+.focus-point circle {
+    fill: none;
+    stroke: #990000;
+    stroke-opacity: 0.5;
+    stroke-width: 3px;
+}
+
+.focus-point text {
+    stroke: #a0a0a0;
+}
+    
+.hover-line {
+    stroke: #990000;
+    stroke-width: 2px;
+    /* stroke-dasharray: 3,3; */
 }

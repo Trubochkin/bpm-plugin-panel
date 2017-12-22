@@ -39,7 +39,7 @@ export class SvgPanelCtrl extends MetricsPanelCtrl {
 
     onRefresh() {
         //console.log("onRefresh()");
-        this.clear()
+        this.clear();
         //this.render();
     }
 
@@ -82,8 +82,8 @@ export class SvgPanelCtrl extends MetricsPanelCtrl {
      /!*console.log( "HOVER", evt, showTT, isExternal );*!/
      }*/
 
-    onMouseClicked(where) {
-        console.log("CANVAS CLICKED", where);
+    onMouseClicked(/* where */) {
+        // console.log("CANVAS CLICKED", where);
         this.render();
     }
 
@@ -93,14 +93,14 @@ export class SvgPanelCtrl extends MetricsPanelCtrl {
 
     chartAddField(targetId) {
         // console.log('ChartD3-this:', this);
-        var targetName = this.convertIdToName(targetId);
+        // var targetName = this.convertIdToName(targetId);
         var wrapVis = d3.select(this.wrapAllVis)
             .append('div')
             .attr('id', 'target-'+targetId)
             .attr('class', 'wrap-vis')
             //.attr('width', '100%')
-            .style('font-size', this.panel.textSize+'px')
-            .style('line-height', this.panel.rowHeight+'px')
+            //.style('font-size', this.panel.textSize+'px')
+            .style('line-height', this.panel.rowHeight+'px');
             // .style('text-align', 'center')
             //.style('background', () => this.lightTheme ? '#f8f8f8' : '#292929');
             
@@ -109,8 +109,8 @@ export class SvgPanelCtrl extends MetricsPanelCtrl {
         visMessage.append('i')
             .attr('class', 'fa fa-spinner fa-spin')
             .style('font-size', '30px');
-        // visMessage.append('span').attr('class', 'msg-no-data')
-        //  .html(`no data ${targetName}`);
+        /* visMessage.append('span').attr('class', 'msg-no-data')
+         .html(`no data ${targetName}`); */
     }
 
     chartRemoveField(targetId) {
@@ -131,25 +131,34 @@ export class SvgPanelCtrl extends MetricsPanelCtrl {
         const width = +W - margin.left - margin.right;
         const height = +H - margin.top - margin.bottom;
 
-        console.log('width, height', width, height);
+        let bisectDate = d3.bisector(d => d.t).left;
+        // console.log('width, height', width, height);
 
         $(this.wrapAllVis).empty();
+
         _.forEach(this.panel.selectedCountersId, (targetId, i) => {
             // console.log('ON-RENDERdata', data);
-            const dataNorm = this.normalizeData(data.counters[i].datapoints);
+            const dataNorm = data.counters[i].datapoints;
             // console.log('dataNorm', dataNorm);
             const dataExtent = d3.extent(dataNorm, d => d.t);   // [min, max]
             //Main Chart Scales
             const xScale = d3.scaleTime()
                 .domain(dataExtent)
                 .range([0, width]);
+
             const yScale = d3.scaleLinear()
-                .domain([0, d3.max(dataNorm, d => d.v) + (d3.max(dataNorm, d => d.v) * 0.1)]) // плюс 10% от максимального
+                .domain([d3.min(_.filter(dataNorm, obj => !obj.fake), d => d.v), d3.max(dataNorm, d => d.v)/*  + (d3.max(dataNorm, d => d.v) * 0.1) */]) // плюс 10% от максимального
                 .range([height, 0]);
             
             // Chart Axes
-            const xAxis = d3.axisBottom().scale(xScale),
-                yAxis = d3.axisLeft().scale(yScale);
+            const xAxis = d3.axisBottom()
+                .scale(xScale)
+                .ticks(Math.round(width / 70))
+                .tickFormat(d3.timeFormat('%H %M'));
+
+            const yAxis = d3.axisLeft()
+                .scale(yScale);
+                //d3.format(".2s")(42e6);
 
             // Area of chart
             const area = d3.area()
@@ -165,89 +174,155 @@ export class SvgPanelCtrl extends MetricsPanelCtrl {
                 //.curve(d3.curveCatmullRom.alpha(0.5));
             
             // var targetIdCorrect = targetId.split('.').join('\\.');  // экранирование точек для корректной выборки
-            const svg = d3.select(this.wrapAllVis)
+            const wrapVis = d3.select(this.wrapAllVis)
                 .append('div')
-                .style('font-size', this.panel.textSize+'px')
                 .attr('id', 'target-'+targetId)
-                .attr('class', 'wrap-vis')
+                .attr('class', 'wrap-vis');
+            wrapVis.append('h3')
+                .attr('class', 'title-wrap-vis')
+                .html(this.convertIdToName(targetId))
+                .style('font-size', this.panel.textSizeTitles+'px');
                 //.style('background', () => this.lightTheme ? '#f8f8f8' : '#292929')
                 //.append('text')
-                .html(this.convertIdToName(targetId))
-                .append('svg')
+                
+            const svg = wrapVis.append('svg')
                 .attr('height', H)
                 .attr('width', W)
                 .attr('class', 'svg-area');
                 // content area of your visualization (note: g elements do NOT have dimensions)
-            const vis = svg.append("g")
-                .attr("transform", `translate(${margin.left},${margin.top})`);
+            const svgVis = svg.append('g')
+                .attr('transform', `translate(${margin.left},${margin.top})`);
                 // .attr('transform', `translate(${margin.left}, ${margin.top})`);
 
-            var clipPath = vis.append('clipPath')
+            svgVis.append('clipPath')
                 .attr('id', 'vis-clip')
                 .append('rect')
                 .attr('width', width)
                 .attr('height', height)
-                .attr("transform", "translate(1, -1)");
+                .attr('transform', 'translate(1, -1)');
 
-            vis.append('g')
+            svgVis.append('g')
                 .classed('x axis', true)
                 .attr('transform', `translate(0, ${height})`)
                 .call(xAxis);
     
-            vis.append('g')
+            svgVis.append('g')
                 .classed('y axis', true)
                 .attr('transform', 'translate(0, 0)')
                 .call(yAxis);
 
             // Вставка области заливки графика
-            vis.append('g')
+            svgVis.append('g')
                 .attr('clip-path', 'url(#vis-clip)') // задание области видимости
                 .attr('class', 'areaChart')
                 .append('path')
                 .attr('d', area(dataNorm))
                 // .attr('stroke-width', '2px')
                 // .attr('stroke', '#1400C7')
-                .style('fill', '#0b2bdc')
+                .style('fill', 'blue')
                 .style('fill-opacity', 0.5);
                 //.attr('transform', `translate(${margin.left}, ${margin.top})`);
             
             // Вставка линии графика
-            vis.append('g')
+            svgVis.append('g')
                 .attr('clip-path', 'url(#vis-clip)') // задание области видимости
                 .attr('class', 'lineChart')
                 .append('path')
                 .attr('d', line(dataNorm.filter(obj => !obj.fake)))
-                .style('stroke', '#1400C7')
-                .style('stroke-width', 2)
-                .style('fill-opacity', 0);;
-        })
+                .style('stroke', '#006cd1')
+                .style('stroke-width', 1)
+                .style('fill-opacity', 0);
+
+            // Отображение подсказки и линии при наведении на график
+            const focus = svgVis.append('g')
+                .attr('class', 'focus')
+                .style('display', 'none');
+        
+            const focusLine = focus.append('g')
+                .attr('class', 'focus-line');
+
+            focusLine.append('line')
+                .attr('class', 'x-hover-line hover-line')
+                .attr('y1', 0)
+                .attr('y2', height);
+        
+            focusLine.append('line')
+                .attr('class', 'y-hover-line hover-line')
+                .attr('x1', width)
+                .attr('x2', width);
+        
+            const focusPoint = focus.append('g')
+                .attr('class',  'focus-point');
+
+            focusPoint.append('circle')
+                .attr('r', 7.5);
+        
+            focusPoint.append('text')
+                .attr('x', 15)
+                .attr('dy', '.31em');
+            
+            svgVis.append('rect')
+                .attr('class', 'overlay')
+                .attr('width', width)
+                .attr('height', height)
+                .style('pointer-events', 'all')
+                .style('fill', 'none')
+                .on('mouseover', () => focus.style('display', null))
+                .on('mouseout', () => focus.style('display', 'none'))
+                .on('mousemove', mousemove);
+
+            function mousemove() {
+                let data = dataNorm.filter(obj => !obj.fake);
+                
+                let x0 = xScale.invert(d3.mouse(this)[0]),
+                    i = bisectDate(data, x0, 1),
+                    d0 = data[i - 1],
+                    d1 = data[i];
+                    //d = { 't': 0, 'v': 0 };
+
+                if (d0 && d1) {
+                    var d = x0 - d0.t > d1.t - x0 ? d1 : d0;
+                    focusPoint.select('circle').attr('transform', 'translate(' + xScale(d.t) + ',' + yScale(d.v) + ')');
+                    focusPoint.select('text')
+                        .text(function() { return d.v; })
+                        .attr('x', d3.mouse(this)[0]+15)
+                        .attr('y', d3.mouse(this)[1]);
+                    // focus.select('.x-hover-line').attr('y2', height - yScale(d.v));
+                    focusLine.attr('transform', 'translate(' + xScale(d.t) + ', 0)');
+                    focusLine.select('.y-hover-line').attr('x2', width + width);
+                }
+
+                
+            }
+        });
     }
 
     normalizeData(data) {
         const dateFrom = this.range.from.clone(),
-        dateTo = this.range.to.clone()
-        let dataset = _.map(data, (d, i) => {
+            dateTo = this.range.to.clone();
+
+        let datapoints = _.map(data.datapoints, d => {
             return {
                 t: d[1],
                 v: d[0]
-            }
-        })
-        if (dataset.length) {
-            dataset.unshift(
+            };
+        });
+        if (datapoints.length) {
+            datapoints.unshift(
                 {
                     t: new Date(dateFrom).getTime(),
                     v: 0,
                     fake: true
                 },
                 {
-                    t: dataset[0].t - 1,
+                    t: datapoints[0].t - 1,
                     v: 0,
                     fake: true
                 }
             );
-            dataset.push(
+            datapoints.push(
                 {
-                    t: dataset[dataset.length - 1].t + 1,
+                    t: datapoints[datapoints.length - 1].t + 1,
                     v: 0,
                     fake: true
                 },
@@ -258,10 +333,21 @@ export class SvgPanelCtrl extends MetricsPanelCtrl {
                 }
             );
         }
-        return dataset;
+        datapoints = datapoints.sort((a, b) => {
+            if (a.t < b.t)
+                return -1;
+            if (a.t > b.t)
+                return 1;
+            return 0;
+        });
+
+        return {
+            datapoints: datapoints, 
+            target: data.target
+        };
     }
 
-    link(scope, elem, attrs, ctrl) {
+    link(scope, elem/* , attrs, ctrl */) {
         // console.log('panel-canvasMetric-link-elem', elem);
         this.wrapAllVis = elem.find('.wrap-all-vis')[0];
         /*  var timeMouseDown = 0;
