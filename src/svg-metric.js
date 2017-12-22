@@ -147,7 +147,7 @@ export class SvgPanelCtrl extends MetricsPanelCtrl {
                 .range([0, width]);
 
             const yScale = d3.scaleLinear()
-                .domain([d3.min(_.filter(dataNorm, obj => !obj.fake), d => d.v), d3.max(dataNorm, d => d.v)/*  + (d3.max(dataNorm, d => d.v) * 0.1) */]) // плюс 10% от максимального
+                .domain([d3.min(_.filter(dataNorm, obj => !obj.fake), d => d.v), d3.max(dataNorm, d => d.v)])
                 .range([height, 0]);
             
             // Chart Axes
@@ -163,7 +163,7 @@ export class SvgPanelCtrl extends MetricsPanelCtrl {
             // Area of chart
             const area = d3.area()
                 .x(d => xScale(d.t))
-                .y0(height)
+                .y0(yScale(0))
                 .y1(d => yScale(d.v));
                 //.curve(d3.curveCatmullRom.alpha(0.3));
 
@@ -216,7 +216,7 @@ export class SvgPanelCtrl extends MetricsPanelCtrl {
                 .attr('clip-path', 'url(#vis-clip)') // задание области видимости
                 .attr('class', 'areaChart')
                 .append('path')
-                .attr('d', area(dataNorm))
+                .attr('d', area(dataNorm.filter(obj => !obj.fake)))
                 // .attr('stroke-width', '2px')
                 // .attr('stroke', '#1400C7')
                 .style('fill', 'blue')

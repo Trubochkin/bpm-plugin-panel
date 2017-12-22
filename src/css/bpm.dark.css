@@ -76,7 +76,7 @@ div.wrap-vis i {
 }
 
 .focus-point text {
-    stroke: #a0a0a0;
+    fill: #ffffff;
 }
     
 .hover-line {
