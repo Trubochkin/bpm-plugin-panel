@@ -132,7 +132,7 @@ export class SvgPanelCtrl extends MetricsPanelCtrl {
         const height = +H - margin.top - margin.bottom;
 
         let bisectDate = d3.bisector(d => d.t).left;
-        // console.log('width, height', width, height);
+        // console.log('FORMAT', /* d3.format('.2f')(1) */ Math.round(3.0 * 100) / 100);
 
         $(this.wrapAllVis).empty();
 
@@ -216,11 +216,12 @@ export class SvgPanelCtrl extends MetricsPanelCtrl {
                 .attr('clip-path', 'url(#vis-clip)') // задание области видимости
                 .attr('class', 'areaChart')
                 .append('path')
-                .attr('d', area(dataNorm.filter(obj => !obj.fake)))
+                .datum(dataNorm.filter(obj => !obj.fake))
+                .style('fill', 'blue')
+                .style('fill-opacity', 1)
+                .attr('d', area(dataNorm.filter(obj => !obj.fake)));
                 // .attr('stroke-width', '2px')
                 // .attr('stroke', '#1400C7')
-                .style('fill', 'blue')
-                .style('fill-opacity', 0.5);
                 //.attr('transform', `translate(${margin.left}, ${margin.top})`);
             
             // Вставка линии графика
@@ -304,7 +305,7 @@ export class SvgPanelCtrl extends MetricsPanelCtrl {
         let datapoints = _.map(data.datapoints, d => {
             return {
                 t: d[1],
-                v: d[0]
+                v: Math.round(d[0] * 100) / 100
             };
         });
         if (datapoints.length) {
