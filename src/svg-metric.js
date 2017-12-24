@@ -136,23 +136,38 @@ export class SvgPanelCtrl extends MetricsPanelCtrl {
 
         _.forEach(this.panel.selectedCountersId, (targetId, i) => {
             // console.log('ON-RENDERdata', data);
+            const dateFrom = this.range.from.clone();
+            const dateTo = this.range.to.clone();
             const dataNorm = data.counters[i].datapoints;
-            // console.log('dataNorm', dataNorm);
+            const dataStatusLine = _.filter(data.statusLines, line => {
+                return targetId.search(line.targetId) === 0;
+            })[0];
+            // console.log('dataStatusLine', dataStatusLine);
             const dataExtent = d3.extent(dataNorm, d => d.t);   // [min, max]
+            
+            const xScaleBar = d3.scaleLinear()
+                .domain([0, dataStatusLine.selectedTime])
+                .range([0, width]);
+
+            const yScaleBar = d3.scaleBand()
+                .domain(['state', 'brand'])
+                .range([height, 0]);
+                // .padding(0.1);
+
             //Main Chart Scales
             const xScale = d3.scaleTime()
                 .domain(dataExtent)
-                .rangeRound([0, width]);
+                .range([0, width]);
 
             const yScale = d3.scaleLinear()
                 .domain([d3.min(_.filter(dataNorm, obj => !obj.fake), d => d.v), d3.max(dataNorm, d => d.v)])
-                .rangeRound([height, 0]);
+                .range([height, 0]);
             
             // Chart Axes
             const xAxis = d3.axisBottom()
                 .scale(xScale)
                 .ticks(Math.round(width / 70))
-                .tickFormat(d3.timeFormat('%H %M'));
+                /* .tickFormat(d3.timeFormat('%H %M')) */;
 
             const yAxis = d3.axisLeft()
                 .scale(yScale);
@@ -212,6 +227,23 @@ export class SvgPanelCtrl extends MetricsPanelCtrl {
                 .attr('transform', 'translate(0, 0)')
                 .call(yAxis);
 
+            // add bars
+            svgVis.append('g')
+                .attr('clip-path', 'url(#vis-clip)') // задание области видимости
+                .attr('class', 'gBars')
+                .selectAll('rect')
+                .data(dataStatusLine.changes)
+                .enter()
+                .append('rect')
+                .attr('class', 'rectBar')
+                .attr('x', d => xScale(d.start))
+                .attr('y', () => yScaleBar.step())
+                .attr('width', d => xScaleBar(d.ms))
+                .attr('height', yScaleBar.bandwidth())
+                .attr('fill', d => d.color)
+                .style('fill-opacity', 0.5);
+
+
             // Вставка области заливки графика
             svgVis.append('g')
                 .attr('clip-path', 'url(#vis-clip)') // задание области видимости
@@ -219,7 +251,7 @@ export class SvgPanelCtrl extends MetricsPanelCtrl {
                 .append('path')
                 .datum(dataNorm.filter(obj => !obj.fake))
                 .style('fill', 'blue')
-                .style('fill-opacity', 1)
+                .style('fill-opacity', 0.2)
                 .attr('d', area(dataNorm.filter(obj => !obj.fake)));
                 // .attr('stroke-width', '2px')
                 // .attr('stroke', '#1400C7')
@@ -232,7 +264,7 @@ export class SvgPanelCtrl extends MetricsPanelCtrl {
                 .append('path')
                 .attr('d', line(dataNorm.filter(obj => !obj.fake)))
                 .style('stroke', '#006cd1')
-                .style('stroke-width', 1)
+                .style('stroke-width', 2)
                 .style('fill-opacity', 0);
 
             // Отображение tooltip и линии при наведении на график

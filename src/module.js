@@ -431,7 +431,7 @@ class BpmPanelCtrl extends SvgPanelCtrl {
         let datapoints = _.map(data.datapoints, d => {
             return {
                 t: d[1],
-                v: Math.round(d[0] * 100) / 100
+                v: _.round(d[0], 2)
             };
         });
         if (datapoints.length) {
