@@ -6,9 +6,9 @@
     position: fixed;
 }
 
-.panel-scroll {
+/* .panel-scroll {
     overflow: inherit !important;
-}
+} */
 
 /* .jstree-default-dark .jstree-clicked {
     background: none;
@@ -42,7 +42,9 @@ div.wrap-vis {
 
 h3.title-wrap-vis {
     margin-left: 15px;
+    margin-right: 20px;
     padding-top: 7px;
+    text-align: right;
 }
 
 div.wrap-vis i {

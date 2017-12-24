@@ -1,14 +1,14 @@
 .grafana-tooltip {
-    background-color: rgba(225,225,225, 1);
+    background-color: #e1e1e1;
 }
 
 .modal {
     position: fixed;
 }
 
-.panel-scroll {
+/* .panel-scroll {
     overflow: inherit;
-}
+} */
 
 /* .jstree-default .jstree-clicked {
     background: none;
@@ -20,7 +20,7 @@
 }
 
 div.wrap-all-vis{
-    overflow: inherit !important;
+    /* overflow: inherit !important; */
     width: 100%; 
     position: relative;
 }
@@ -40,6 +40,13 @@ div.wrap-vis {
     /* text-align: center; */
 }
 
+h3.title-wrap-vis {
+    margin-left: 15px;
+    margin-right: 20px;
+    padding-top: 7px;
+    text-align: right;
+}
+
 div.wrap-vis i{
     width: 100%;
     text-align: center;
@@ -55,10 +62,27 @@ div.wrap-vis i{
 
 .axis .tick text {
     fill: #272727;
-    font-size: 0.7rem;
+    font-size: 10px;
 }
 
 .axis .domain {
     fill: none;
     stroke: #272727;
+}
+
+.focus-point circle {
+    fill: none;
+    stroke: #990000;
+    stroke-opacity: 0.5;
+    stroke-width: 3px;
+}
+
+.focus-point text {
+    fill: #ff0000;
+}
+    
+.hover-line {
+    stroke: #990000;
+    stroke-width: 2px;
+    /* stroke-dasharray: 3,3; */
 }

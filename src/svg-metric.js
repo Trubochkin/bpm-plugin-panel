@@ -91,7 +91,7 @@ export class SvgPanelCtrl extends MetricsPanelCtrl {
      console.log( "CANVAS Range", range );
     }*/
 
-    chartAddField(targetId) {
+    chart_addWrapVis(targetId) {
         // console.log('ChartD3-this:', this);
         // var targetName = this.convertIdToName(targetId);
         var wrapVis = d3.select(this.wrapAllVis)
@@ -113,7 +113,7 @@ export class SvgPanelCtrl extends MetricsPanelCtrl {
          .html(`no data ${targetName}`); */
     }
 
-    chartRemoveField(targetId) {
+    chart_removeWrapVis(targetId) {
         var targetIdCorrect = targetId.split('.').join('\\.');  // экранирование точек для корректной выборки
         d3.select(this.wrapAllVis)
             .select('#target-'+targetIdCorrect)
@@ -298,55 +298,7 @@ export class SvgPanelCtrl extends MetricsPanelCtrl {
         });
     }
 
-    normalizeData(data) {
-        const dateFrom = this.range.from.clone(),
-            dateTo = this.range.to.clone();
-
-        let datapoints = _.map(data.datapoints, d => {
-            return {
-                t: d[1],
-                v: Math.round(d[0] * 100) / 100
-            };
-        });
-        if (datapoints.length) {
-            datapoints.unshift(
-                {
-                    t: new Date(dateFrom).getTime(),
-                    v: 0,
-                    fake: true
-                },
-                {
-                    t: datapoints[0].t - 1,
-                    v: 0,
-                    fake: true
-                }
-            );
-            datapoints.push(
-                {
-                    t: datapoints[datapoints.length - 1].t + 1,
-                    v: 0,
-                    fake: true
-                },
-                {
-                    t: new Date(dateTo).getTime(),
-                    v: 0,
-                    fake: true
-                }
-            );
-        }
-        datapoints = datapoints.sort((a, b) => {
-            if (a.t < b.t)
-                return -1;
-            if (a.t > b.t)
-                return 1;
-            return 0;
-        });
-
-        return {
-            datapoints: datapoints, 
-            target: data.target
-        };
-    }
+    
 
     link(scope, elem/* , attrs, ctrl */) {
         // console.log('panel-canvasMetric-link-elem', elem);

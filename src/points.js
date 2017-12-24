@@ -2,9 +2,8 @@ import _ from 'lodash';
 
 export default class DistinctPoints {
 
-    constructor(name, id) {
-        this.target = id;
-        this.targetName = name;
+    constructor(/* id */) {
+        // this.target = id;
         this.changes = [];
         this.legendInfo = [];
 
@@ -14,13 +13,13 @@ export default class DistinctPoints {
     }
 
   // ts: numeric ms,
-  // val: is the normalized value
-    add(numVal, ts, val, comment, color) {
+  // pVal: is the normalized value
+    add(pNumVal, ts, pVal, comment, color) {
         if(this.last == null) {
             this.last = {
-                numVal: numVal,
-                val: val,
-                start: ts,
+                pNumVal: +pNumVal,
+                pVal: pVal,
+                start: +ts,
                 ms: 0,
                 comment: comment,
                 color: color
@@ -28,7 +27,7 @@ export default class DistinctPoints {
             this.changes.push(this.last);
         }
         else if(ts == this.last.ts ) {
-            console.log('skip point with duplicate timestamp', ts, val);
+            console.log('skip point with duplicate timestamp', ts, pVal);
             return;
         }
         else {
@@ -37,21 +36,21 @@ export default class DistinctPoints {
             }
 
             if( (ts > this.last.start) != this.asc ) {
-        // console.log('skip out of order point', ts, val);
+        // console.log('skip out of order point', ts, pVal);
                 return;
             }
 
       // Same value
-            if(val == this.last.val) {
+            if(pVal == this.last.pVal) {
                 if(!this.asc) {
                     this.last.start = ts;
                 }
             }
             else {
                 this.last = {
-                    numVal: numVal,
-                    val: val,
-                    start: ts,
+                    pNumVal: +pNumVal,
+                    pVal: pVal,
+                    start: +ts,
                     ms: 0,
                     comment: comment,
                     color: color
@@ -75,7 +74,7 @@ export default class DistinctPoints {
     // Add a point beyond the controls
         if(this.last && this.last.start < ctrl.range.to) {
             this.changes.push( {
-                val: this.last.val,
+                pVal: this.last.pVal,
                 start: ctrl.range.to+1,
                 ms: 0
             });
@@ -109,24 +108,24 @@ export default class DistinctPoints {
 
             last.ms = e - s;
             if(last.ms > 0) {
-                if(_.has(valToInfo, last.val)) {
-                    var v = valToInfo[last.val];
+                if(_.has(valToInfo, last.pVal)) {
+                    var v = valToInfo[last.pVal];
                     v.ms += last.ms;
                     v.count++;
                 }
                 else {
-                    valToInfo[last.val] = { 'val': last.val, 'ms': last.ms, 'count':1, color: last.color, numVal: last.numVal};
+                    valToInfo[last.pVal] = { 'pVal': last.pVal, 'ms': last.ms, 'count':1, color: last.color, pNumVal: last.pNumVal};
                     legendCount++;
                 }
             }
             last = pt;
         }
 
-        var elapsed = ctrl.range.to - ctrl.range.from;
-        this.elapsed = elapsed;
+        var selectedTime = ctrl.range.to - ctrl.range.from;
+        this.selectedTime = selectedTime;
 
         _.forEach(valToInfo, (value) => {
-            value.per = (value.ms/elapsed);
+            value.per = (value.ms/selectedTime);
             this.legendInfo.push( value );
         });
         this.distinctValuesCount = _.size(this.legendInfo);

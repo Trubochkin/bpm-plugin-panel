@@ -192,18 +192,22 @@ class BpmPanelCtrl extends SvgPanelCtrl {
 
     removeSelectedId(data) {
         // console.log('before DEL:', this.panel.selectedCountersId, this.panel.selectedLinesId);
+        // удаление ID выбранных счётчиков
         _.remove(this.panel.selectedCountersId, id => {
             return id.indexOf(data.node.id) != -1;
         });
+
+        // удаление ID выбранных линий
         if (this.panel.selectedCountersId.length != 0) {
             var lineIdSelect = data.node.id.split('.').splice(0, 2).join('.');
-            var cityIdSelect = data.node.id.split('.').splice(0, 1).join('.');
+            var cityIdSelect = data.node.id.split('.')[0];
+
             if (data.node.id.split('.').length === 3) {
-                var isIncludedLine = false;
+                var isRemainedLines = false;
                 _.forEach(this.panel.selectedCountersId, cId => {
-                    if (cId.indexOf(lineIdSelect) != -1) isIncludedLine = true;
+                    if (cId.indexOf(lineIdSelect) != -1) isRemainedLines = true;
                 });
-                if (!isIncludedLine) {
+                if (!isRemainedLines) {
                     _.remove(this.panel.selectedLinesId, id => {
                         return lineIdSelect === id;
                     });
@@ -221,6 +225,34 @@ class BpmPanelCtrl extends SvgPanelCtrl {
             this.panel.selectedLinesId = [];
         }
         // console.log('after DEL:', this.panel.selectedCountersId, this.panel.selectedLinesId);
+    }
+
+    removeUnselectedData(data) {
+        var oldSelectedIds = {
+            lines: this.panel.selectedLinesId.slice(),
+            counters: this.panel.selectedCountersId.slice(),
+        };
+        this.removeSelectedId(data);
+        var selectedIds = {
+            lines: _.difference(oldSelectedIds.lines, this.panel.selectedLinesId),
+            counters: _.difference(oldSelectedIds.counters, this.panel.selectedCountersId)
+        };
+        // удаляем данные счётчиков
+        _.forEach(selectedIds.counters, targetId => {
+            _.remove(this.savedData.counters, counter => {
+                return counter.targetId === targetId;
+            });
+            this.chart_removeWrapVis(targetId);  // ВРЕМЕННО, нужно переделать под функционал d3 (update) 
+        });
+        // удаляем данные состояний и брендов
+        _.forEach(selectedIds.lines, targetId => {
+            _.remove(this.savedData.statusLines, line => {
+                return line.targetId === targetId;
+            });
+            _.remove(this.savedData.brandsLines, line => {
+                return line.targetId === targetId;
+            });
+        });
     }
 
     jsTreeBuildAction(treeData, datasource) {
@@ -264,35 +296,27 @@ class BpmPanelCtrl extends SvgPanelCtrl {
             if (data.action == 'select_node') {
                 //console.log('select_node', data);
                 var oldSelectedIds = {
-                    statusLines: this.panel.selectedLinesId.slice(),
+                    lines: this.panel.selectedLinesId.slice(),
                     counters: this.panel.selectedCountersId.slice(),
                 };
                 this.addSelectedId(data);
-                var diffSelectedIds = {
-                    statusLines: _.difference(this.panel.selectedLinesId, oldSelectedIds.statusLines),
-                    brandsLines: _.difference(this.panel.selectedLinesId, oldSelectedIds.statusLines),
+                var selectedIds = {
+                    lines: _.difference(this.panel.selectedLinesId, oldSelectedIds.lines),
+                    /* brandsLines: _.difference(this.panel.selectedLinesId, oldSelectedIds.lines), */
                     counters: _.difference(this.panel.selectedCountersId, oldSelectedIds.counters)
                 };
-                // console.log('diffSelectedIds', diffSelectedIds);
+                // console.log('selectedIds', selectedIds);
                 if (this.treeStateResumed) {
-                    _.forEach(diffSelectedIds.counters, targetId => {
-                        this.chartAddField(targetId);
+                    if(_.isEmpty(selectedIds.counters)) return;
+                    _.forEach(selectedIds.counters, targetId => {
+                        this.chart_addWrapVis(targetId);
                     });
-                    this.issueQueries(datasource, diffSelectedIds);     // запрашиваем данные выбранного счётчика
+                    this.issueQueries(datasource, selectedIds);     // запрашиваем данные выбранных счётчиков
                 }
             } else if (data.action == 'deselect_node') {
                 // console.log('deselect_node', data);
-                var oldSelectedIdsCounters = this.panel.selectedCountersId.slice();
-                this.removeSelectedId(data);
-                var diffSelectedIdsCounters = _.difference(oldSelectedIdsCounters, this.panel.selectedCountersId);
-                _.forEach(diffSelectedIdsCounters, targetId => {
-                    // console.log('chartRemoveField', targetId);
-                    _.remove(this.savedData.counters, obj => {
-                        return obj.target === targetId;
-                    });
-                    this.chartRemoveField(targetId);
-                });
-                this.onRender();                                        // !!!!!!!!!! to be continued
+                this.removeUnselectedData(data);
+                //this.onRender();                                        // !!!!!!!!!! to be continued
             }
 
         }).on('open_node.jstree', (e, data) => {
@@ -303,12 +327,13 @@ class BpmPanelCtrl extends SvgPanelCtrl {
             // console.log('set_state', data);
             this.treeStateResumed = true;
             var selectedIds = {
-                statusLines: this.panel.selectedLinesId.slice(),
-                brandsLines: this.panel.selectedLinesId.slice(),
+                lines: this.panel.selectedLinesId.slice(),
+                /* brandsLines: this.panel.selectedLinesId.slice(), */
                 counters: this.panel.selectedCountersId.slice(),
             };
+            if(_.isEmpty(selectedIds.counters)) return;
             _.forEach(selectedIds.counters, targetId => {
-                this.chartAddField(targetId);
+                this.chart_addWrapVis(targetId);
             });
             this.issueQueries(datasource, selectedIds);                 // запрашиваем данные выбранных счётчиков
         });
@@ -353,16 +378,21 @@ class BpmPanelCtrl extends SvgPanelCtrl {
                     brandsLines: this.panel.selectedLinesId,
                     counters: this.panel.selectedCountersId
                 };
+                if(_.isEmpty(dataRequest.targets.counters)) return;
                 return datasource.query(dataRequest, '/query/targets');
             } else {
                 // запрос по событию выбра в дереве
-                dataRequest.targets = targets;
+                dataRequest.targets = {
+                    statusLines: targets.lines,
+                    brandsLines: targets.lines,
+                    counters: targets.counters
+                };
                 this.loading = true;
                 return datasource.query(dataRequest, '/query/targets')
                     .then(data => {
                         this.loading = false;
                         this.onDataReceived(data.data);
-                        this.onRender();
+                        // this.onRender();
                     });
             }
         } else {
@@ -394,6 +424,57 @@ class BpmPanelCtrl extends SvgPanelCtrl {
         return cityName+' - '+lineName;
     }
 
+    normalizeDataCounter(data) {
+        const dateFrom = this.range.from.clone(),
+            dateTo = this.range.to.clone();
+
+        let datapoints = _.map(data.datapoints, d => {
+            return {
+                t: d[1],
+                v: Math.round(d[0] * 100) / 100
+            };
+        });
+        if (datapoints.length) {
+            datapoints.unshift(
+                {
+                    t: new Date(dateFrom).getTime(),
+                    v: 0,
+                    fake: true
+                },
+                {
+                    t: datapoints[0].t - 1,
+                    v: 0,
+                    fake: true
+                }
+            );
+            datapoints.push(
+                {
+                    t: datapoints[datapoints.length - 1].t + 1,
+                    v: 0,
+                    fake: true
+                },
+                {
+                    t: new Date(dateTo).getTime(),
+                    v: 0,
+                    fake: true
+                }
+            );
+        }
+        datapoints = datapoints.sort((a, b) => {
+            if (a.t < b.t)
+                return -1;
+            if (a.t > b.t)
+                return 1;
+            return 0;
+        });
+
+        return {
+            datapoints: datapoints, 
+            targetId: data.target,
+            targetName: this.convertIdToName(data.target)
+        };
+    }
+
     onDataReceived(dataReceived) {
         $('svg').css('cursor', 'pointer');
         this.dataReceived = dataReceived;
@@ -418,57 +499,57 @@ class BpmPanelCtrl extends SvgPanelCtrl {
         }
         // сохраняем полученные данные брендов, состояний линий и счётчиков
         if ('brandsLines' in this.dataReceived && 'statusLines' in this.dataReceived && 'counters' in this.dataReceived) {
-            _.forEach(this.dataReceived.brandsLines, obj => {
-                var res = new DistinctPoints(this.convertIdToName(obj.target), obj.target);
-                _.forEach(obj.datapoints, (point) => {
+            // brands lines
+            _.forEach(this.dataReceived.brandsLines, line => {
+                var brands = new DistinctPoints();
+                _.forEach(line.datapoints, (point) => {
                     // point: [0]-valNum, [1]-time, [2]- valString, [3]-commentText, [4]-fillColor
-                    res.add(point[0], +point[1], point[2], point[3], point[4]);
+                    brands.add(point[0], +point[1], point[2], point[3], point[4]);
                 });
-                res.finish(this);
-                var numVal = this.panel.selectedLinesId.indexOf(obj.target);
+                brands.finish(this);
+                brands.targetId = line.target;
+                brands.targetName = this.convertIdToName(line.target);
+                var numVal = this.panel.selectedLinesId.indexOf(line.target);
                 if (numVal > -1) {
-                    this.savedData.statusLines[numVal] = res;
+                    this.savedData.brandsLines[numVal] = brands;
                 }
-                // this.savedData.brandsLines[obj.target] = res;
             });
-            _.forEach(this.dataReceived.statusLines, obj => {
-                var res = new DistinctPoints(this.convertIdToName(obj.target), obj.target);
-                _.forEach(obj.datapoints, (point) => {
+            // status lines
+            _.forEach(this.dataReceived.statusLines, line => {
+                var statuses = new DistinctPoints();
+                _.forEach(line.datapoints, (point) => {
                     // point: [0]-valNum, [1]-time, [2]- valString, [3]-commentText, [4]-fillColor
-                    res.add(point[0], +point[1], point[2], point[3], point[4]);
+                    statuses.add(point[0], +point[1], point[2], point[3], point[4]);
                 });
-                res.finish(this);
-                var numVal = this.panel.selectedLinesId.indexOf(obj.target);
+                statuses.finish(this);
+                statuses.targetId = line.target;
+                statuses.targetName = this.convertIdToName(line.target);
+                var numVal = this.panel.selectedLinesId.indexOf(line.target);
                 if (numVal > -1) {
-                    this.savedData.statusLines[numVal] = res;
+                    this.savedData.statusLines[numVal] = statuses;
                 }
-                // this.savedData.statusLines[obj.target] = res;
             });
-            _.forEach(this.dataReceived.counters, obj => {
-                var numVal = this.panel.selectedCountersId.indexOf(obj.target);
+            // counters
+            _.forEach(this.dataReceived.counters, counter => {
+                var numVal = this.panel.selectedCountersId.indexOf(counter.target);
                 if (numVal > -1) {
-                    this.savedData.counters[numVal] = this.normalizeData(obj);
-                    // this.savedData.counters[numVal] = obj;
+                    this.savedData.counters[numVal] = this.normalizeDataCounter(counter);
                 }
-                // this.savedData.counters[obj.target] = obj;
-                // this.savedData.counters[obj.target].targetName = this.convertIdToName(obj.target);
             });
-
-            console.log('this.savedData', this.savedData);
-            this.onRender();
+            this.onRender(this.savedData);
         }
     }
 
-    onRender() {
-        console.log('ON-RENDER', this.savedData);
-        if (!this.savedData) {
+    onRender(data) {
+        if (!data) {
             return;
         }
-        if (_.isEmpty(this.savedData.counters)) {
+        if (_.isEmpty(data.counters)) {
             //console.log('ON-RENDER-NODATA');
             return;
         }
-        this.chartBuildSvg(this.savedData);
+        console.log('ON-RENDER', data);
+        this.chartBuildSvg(data);
 /* 
         //$('.panel-scroll').css({'max-height': (this.height) +'px'});
         if (this.panel.showGraph) {
