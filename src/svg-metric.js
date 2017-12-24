@@ -33,7 +33,7 @@ export class SvgPanelCtrl extends MetricsPanelCtrl {
     }
 
     onPanelInitalized() {
-        //console.log("onPanelInitalized()");
+        // console.log("onPanelInitalized()");
         // this.render();
     }
 
@@ -44,9 +44,7 @@ export class SvgPanelCtrl extends MetricsPanelCtrl {
     }
 
     clearTT() {
-        this
-            .$tooltip
-            .detach();
+        this.$tooltip.detach();
     }
 
     normalizeTouchPosition(evt) {
@@ -144,11 +142,11 @@ export class SvgPanelCtrl extends MetricsPanelCtrl {
             //Main Chart Scales
             const xScale = d3.scaleTime()
                 .domain(dataExtent)
-                .range([0, width]);
+                .rangeRound([0, width]);
 
             const yScale = d3.scaleLinear()
                 .domain([d3.min(_.filter(dataNorm, obj => !obj.fake), d => d.v), d3.max(dataNorm, d => d.v)])
-                .range([height, 0]);
+                .rangeRound([height, 0]);
             
             // Chart Axes
             const xAxis = d3.axisBottom()
@@ -189,11 +187,12 @@ export class SvgPanelCtrl extends MetricsPanelCtrl {
                 .attr('height', H)
                 .attr('width', W)
                 .attr('class', 'svg-area');
-                // content area of your visualization (note: g elements do NOT have dimensions)
+                // вставка группы для всего визуального содержимого (note: g elements do NOT have dimensions)
             const svgVis = svg.append('g')
                 .attr('transform', `translate(${margin.left},${margin.top})`);
                 // .attr('transform', `translate(${margin.left}, ${margin.top})`);
 
+            // Вставка прямоугольника видимости графика
             svgVis.append('clipPath')
                 .attr('id', 'vis-clip')
                 .append('rect')
@@ -201,11 +200,13 @@ export class SvgPanelCtrl extends MetricsPanelCtrl {
                 .attr('height', height)
                 .attr('transform', 'translate(1, -1)');
 
+            // Вставка оси X
             svgVis.append('g')
                 .classed('x axis', true)
                 .attr('transform', `translate(0, ${height})`)
                 .call(xAxis);
     
+            // Вставка оси Y
             svgVis.append('g')
                 .classed('y axis', true)
                 .attr('transform', 'translate(0, 0)')
@@ -234,7 +235,7 @@ export class SvgPanelCtrl extends MetricsPanelCtrl {
                 .style('stroke-width', 1)
                 .style('fill-opacity', 0);
 
-            // Отображение подсказки и линии при наведении на график
+            // Отображение tooltip и линии при наведении на график
             const focus = svgVis.append('g')
                 .attr('class', 'focus')
                 .style('display', 'none');

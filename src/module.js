@@ -540,16 +540,16 @@ class BpmPanelCtrl extends SvgPanelCtrl {
         }
     }
 
-    onRender(data) {
-        if (!data) {
+    onRender() {
+        if (!this.savedData) {
             return;
         }
-        if (_.isEmpty(data.counters)) {
+        if (_.isEmpty(this.savedData.counters)) {
             //console.log('ON-RENDER-NODATA');
             return;
         }
-        console.log('ON-RENDER', data);
-        this.chartBuildSvg(data);
+        console.log('ON-RENDER', this.savedData);
+        this.chartBuildSvg(this.savedData);
 /* 
         //$('.panel-scroll').css({'max-height': (this.height) +'px'});
         if (this.panel.showGraph) {
