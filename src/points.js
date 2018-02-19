@@ -10,6 +10,7 @@ export default class DistinctPoints {
     // last point we added
         this.last = null;
         this.asc = false;
+        // console.log('POINTS: ', this);
     }
 
   // ts: numeric ms,
@@ -85,10 +86,10 @@ export default class DistinctPoints {
         var valToInfo = {};
         var lastTS = 0;
         var legendCount = 0;
-        var maxLegendSize = ctrl.panel.legendMaxValues;  // количество значений в легенде
-        if(!maxLegendSize) {
-            maxLegendSize = 20;
-        }
+        // var maxLegendSize = ctrl.panel.legendMaxValues;  // количество значений в легенде
+        // if(!maxLegendSize) {
+        //     maxLegendSize = 20;
+        // }
         var last = this.changes[0];
         for(var i=1; i<this.changes.length; i++) {
             var pt = this.changes[i];

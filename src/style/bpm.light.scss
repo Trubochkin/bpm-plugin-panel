@@ -2,16 +2,9 @@
     background-color: #e1e1e1;
 }
 
-.modal {
+// для всплывающего окна ввода комментрия
+/* .modal {
     position: fixed;
-}
-
-/* .panel-scroll {
-    overflow: inherit;
-} */
-
-/* .jstree-default .jstree-clicked {
-    background: none;
 } */
 
 /* для корректой работы выпадающего дерева на мобильных устройствах */
@@ -19,7 +12,13 @@
     display:none;
 }
 
-div.wrap-all-vis{
+div.container.jstree {
+    background: rgba(255, 255, 255, 0.9);
+}
+
+
+
+div.wrap-all{
     /* overflow: inherit !important; */
     width: 100%; 
     position: relative;

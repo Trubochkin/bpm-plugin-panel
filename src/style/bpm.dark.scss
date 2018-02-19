@@ -1,0 +1,117 @@
+$tooltip-background: #000000;
+$jstree-background: rgba(41, 41, 41, 0.9);
+$wrapVis-background: rgba(49, 49, 49, 0.5);
+
+// svg
+$axisLineColor: #ffffff;        // цвет лини осей и тиков
+$axisFontColor: #ffffff;        // цвет текста и цифр на осях
+$tooltipFontColor: #ffffff;     // цвет текста в всплывающих подсказках
+$hoverLineColor: #990000;       // цвет линии при ведении мыши над графиком
+
+
+.grafana-tooltip {
+    background-color: $tooltip-background;
+}
+
+// для всплывающего окна ввода комментрия
+/* .modal {
+    position: fixed;
+} */
+
+// PANEL HEADER
+div.content-header {
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-start;
+    // для корректой работы выпадающего дерева на мобильных устройствах
+    div.btn-group.open .dropdown-backdrop {
+        display:none;
+    } 
+    div.tree-container.jstree {
+        background: $jstree-background;
+        overflow-x: auto;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+}
+
+
+// PANEL CONTENT
+div.content-wrap {
+    -webkit-overflow-scrolling: touch;
+    overflow-x: hidden;
+    overflow-y: auto;
+    width: 100%; 
+    //position: relative;
+
+    div.wrap-vis {
+        width: 100%;
+        margin-bottom: 5px;
+        background: $wrapVis-background;
+        /* text-align: center; */
+        h3.wrap-vis-title {
+            margin-left: 15px;
+            margin-right: 20px;
+            padding-top: 7px;
+            text-align: right;
+
+            font.city {
+                color: #A7D999;
+            }
+            font.line {
+                color: #F6AE66;
+            }
+            font.counter {
+                color: #a3cae2
+            }
+            span.loaded {
+                display: none;
+            }
+        }
+
+        svg {
+            /* background-color: #383838;
+            box-sizing: inherit;
+            display: inline-block;
+            /* position: abslute; */
+            // vertical-align: baseline;
+
+            .axis {
+                stroke-width: 1;
+            }
+            
+            .axis .tick line {
+                stroke: $axisLineColor;
+            }
+            
+            .axis .tick text {
+                fill: $axisFontColor;
+                font-size: 10px;
+            }
+            
+            .axis .domain {
+                fill: none;
+                stroke: $axisLineColor;
+            }
+            
+            .focus-point circle {
+                fill: none;
+                stroke: $hoverLineColor;
+                stroke-opacity: 0.5;
+                stroke-width: 3px;
+            }
+            
+            .focus-point text {
+                fill: $axisFontColor;
+            }
+                
+            .hover-line {
+                stroke: $hoverLineColor;
+                stroke-width: 2px;
+                /* stroke-dasharray: 3,3; */
+            }
+        }
+    }
+}
+
+

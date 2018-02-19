@@ -1,26 +1,28 @@
-<div class="panel-scroll">
+<div class="panel-main-wrap" id="{{ctrl.pluginId + '-' + ctrl.panel.id}}">
 
+    <!-- <d-tree-view module-ctrl="ctrl"></d-tree-view> -->
 
-
-<!-- <d-tree-view module-ctrl="ctrl"></d-tree-view> -->
-
-<div class="gf-form-inline">
-    <div class="gf-form">
-        <div class="btn-group">
-            <button class="{{'dropdown-toggle btn btn-secondary ' +ctrl.btnShowTree}}" data-toggle="dropdown">
-                <span ng-hide="ctrl.treeLoaded">
-                    <i class="fa fa-spinner fa-spin"></i>
-                </span>
-                Choose line
-                <span class="caret"></span>
-            </button>
-            <div id="{{ 'jsTree-' + ctrl.panel.id }}" class="container dropdown-menu" role="menu" style="z-index: 99"></div>
+    <!-- <div class="gf-form-inline panel-header"> -->
+    <div class="gf-form-inline content-header">
+        <div class="gf-form">
+            <div class="btn-group">
+                <button class="{{'dropdown-toggle btn btn-secondary ' + ctrl.btnShowTree}}" data-toggle="dropdown">
+                <!-- <button class="{{'dropdown-toggle btn navbar-button ' + ctrl.btnShowTree}}" data-toggle="dropdown"> -->
+                    <!-- <span ng-hide="ctrl.treeLoaded">
+                        <i class="fa fa-spinner fa-spin"></i>
+                    </span> -->
+                    Choose line
+                    <span class="caret"></span>
+                </button>
+                <div id="{{ 'jsTree-' + ctrl.panel.id }}" class="tree-container dropdown-menu" role="menu" style="z-index: 99"></div>
+            </div>
         </div>
+        
     </div>
-</div>
 
-    <!-- <div class="{{'svg-spot panelId-'+ctrl.panel.id}}"></div> -->
-    <div class="wrap-all-vis"></div>
+    <!-- <div class="chart-container" style="position: relative; height:40vh; width:80vw; background-color: #292929"></div> -->
+    <!-- <div id="{{'panel' + ctrl.panel.id + '-wrap-container'}}" class="wrap-container"></div> -->
+    <div class="content-wrap"></div>
 
 
     <!-- <div ng-show="ctrl.panel.showGraph" class="canvas-spot" style="width:100%;"></div> -->
@@ -28,12 +30,12 @@
         <div ng-repeat="metric in ctrl.data">
             <span ng-show="ctrl.panel.showLegendNames">{{ metric.name }}: </span>
             <div ng-show="ctrl.panel.showLegendValues"
-                 ng-repeat="info in metric.legendInfo | orderBy:ctrl.panel.legendSortBy | limitTo:ctrl.panel.legendMaxValues"
-                 style="cursor: default; display:inline-block; margin-right:15px;"
-                 ng-mousemove="ctrl.showLegandTooltip($event, info);"
-                 ng-mouseleave="ctrl.clearTT()">
+                ng-repeat="info in metric.legendInfo | orderBy:ctrl.panel.legendSortBy | limitTo:ctrl.panel.legendMaxValues"
+                style="cursor: default; display:inline-block; margin-right:15px;"
+                ng-mousemove="ctrl.showLegandTooltip($event, info);"
+                ng-mouseleave="ctrl.clearTT()">
                 <div ng-style="{ 'background-color': ctrl.getColor(info) }"
-                     style="width:10px; height:10px; display:inline-block;">
+                    style="width:10px; height:10px; display:inline-block;">
 
                 </div>
                 {{ ctrl.getLegendDisplay( info, metric ) }}

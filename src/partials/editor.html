@@ -14,9 +14,18 @@
           <label class="gf-form-label width-14">Row Height</label>
           <input type="number" ng-model="ctrl.panel.rowHeight" class="gf-form-input max-width-5" ng-blur="ctrl.render()" min="1"/>
         </div>
+
         <div class="gf-form">
           <label class="gf-form-label width-14">Text Size Titles</label>
           <input type="number" ng-model="ctrl.panel.textSizeTitles" class="gf-form-input max-width-5" ng-blur="ctrl.render()" min="1"/>
+        </div>
+
+        <div class="gf-form">
+          <gf-form-switch class="gf-form"
+            label="Adding rows ascending"
+            label-class="gf-form-label width-14"
+            checked="ctrl.panel.ascData"
+            on-change="ctrl.onConfigChanged()"></gf-form-switch>
         </div>
 
         <!-- <div class="gf-form">
