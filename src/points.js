@@ -28,7 +28,7 @@ export default class DistinctPoints {
             this.changes.push(this.last);
         }
         else if(ts == this.last.ts ) {
-            console.log('skip point with duplicate timestamp', ts, pVal);
+            // console.log('skip point with duplicate timestamp', ts, pVal);
             return;
         }
         else {
@@ -83,19 +83,19 @@ export default class DistinctPoints {
 
       /*console.log('ctrl.panel.legendMaxValues', ctrl.panel.legendMaxValues);*/
         this.transitionCount = 0;
-        var valToInfo = {};
-        var lastTS = 0;
-        var legendCount = 0;
+        let valToInfo = {};
+        let lastTS = 0;
+        let legendCount = 0;
         // var maxLegendSize = ctrl.panel.legendMaxValues;  // количество значений в легенде
         // if(!maxLegendSize) {
         //     maxLegendSize = 20;
         // }
-        var last = this.changes[0];
-        for(var i=1; i<this.changes.length; i++) {
-            var pt = this.changes[i];
+        let last = this.changes[0];
+        for(let i=1; i<this.changes.length; i++) {
+            let pt = this.changes[i];
 
-            var s = last.start;
-            var e = pt.start;
+            let s = last.start;
+            let e = pt.start;
             if( s < ctrl.range.from ) {
                 s = ctrl.range.from;
             }
@@ -110,7 +110,7 @@ export default class DistinctPoints {
             last.ms = e - s;
             if(last.ms > 0) {
                 if(_.has(valToInfo, last.pVal)) {
-                    var v = valToInfo[last.pVal];
+                    let v = valToInfo[last.pVal];
                     v.ms += last.ms;
                     v.count++;
                 }
@@ -122,7 +122,7 @@ export default class DistinctPoints {
             last = pt;
         }
 
-        var selectedTime = ctrl.range.to - ctrl.range.from;
+        let selectedTime = ctrl.range.to - ctrl.range.from;
         this.selectedTime = selectedTime;
 
         _.forEach(valToInfo, (value) => {

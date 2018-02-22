@@ -9,11 +9,11 @@ import _ from 'lodash';
 import $ from 'jquery';
 import moment from 'moment';
 // import angular from 'angular';
-import kbn from 'app/core/utils/kbn';
+// import kbn from 'app/core/utils/kbn';
 import appEvents from 'app/core/app_events';
 import {loadPluginCss} from 'app/plugins/sdk';
 import * as hash from './lib/hash/object_hash';
-import * as d3 from 'd3';
+// import * as d3 from 'd3';
 
 
 loadPluginCss({
@@ -75,7 +75,7 @@ class BpmPanelCtrl extends SvgPanelCtrl {
             selectedCountersId: [],
             selectedLinesId: [],
             textSizeTitles: 16,
-            rowHeight: 200,
+            svgHeight: 200,
             ascData: true,             // отображение данных в порядке выбора
         };
         
@@ -131,13 +131,22 @@ class BpmPanelCtrl extends SvgPanelCtrl {
                 }
             }
         };
-        this.tags = {
-            
+        this.elements = {
+            tags: {},
+            sizes: {
+                marginAreaVis: { top: 5, right: 20, bottom: 20, left: 40 }
+            }
         };
         this.timeSrv = timeSrv;     // using to reset timer of autorefresh         
-        console.log('this', this);
-
-        // console.log('this.datasourceSrv', this.datasourceSrv);
+        
+        this.$log.log('this', this);
+        // this.text = 'Hello!';
+        // setInterval(() => {
+        //     // this.$scope.$apply(() => {
+        //         this.text = this.text + ' ' + Math.round(Math.random() * 100);
+        //         this.$scope.$digest();
+        //     // });
+        // }, 1000);
         //console.log('convertDataToNestedTree ', this.convertDataToNestedTree(orgData, counters));
     }
 
@@ -164,11 +173,11 @@ class BpmPanelCtrl extends SvgPanelCtrl {
     heightUpdate() {
         // height update for scroll elements
         let elTreeContainer = $('#' + this.pluginId + '-' + this.panel.id + ' .content-header .tree-container')[0];
-        let headerHeight = $(this.panel.elContentHeader).prop('clientHeight');
-        let contentWrapWidth = $(this.panel.elContentWrap).prop('clientWidth');
+        let headerHeight = $(this.elements.tags.contentHeader).prop('clientHeight');
+        let contentWrapWidth = $(this.elements.tags.contentWrap).prop('clientWidth');
         $(elTreeContainer).css({'max-height': (this.height - headerHeight) +'px'});
         $(elTreeContainer).css({'max-width': contentWrapWidth +'px'});
-        $(this.panel.elContentWrap).css({'max-height': (this.height - headerHeight) +'px'});
+        $(this.elements.tags.contentWrap).css({'max-height': (this.height - headerHeight) +'px'});
     }
 
     convertDataToNestedTree(data) {
@@ -567,10 +576,10 @@ class BpmPanelCtrl extends SvgPanelCtrl {
                 this.btnShowTree = 'active';                                                // делаем кнопку активной
 
                 // создаём ссылки на основные элементы страницы для работы с ними в дальнейшем
-                this.panel.elMainWrap = $('#' + this.pluginId + '-' + this.panel.id)[0];
-                this.panel.elContentHeader = $('#' + this.pluginId + '-' + this.panel.id + ' .content-header')[0];
-                this.panel.elContentWrap = $('#' + this.pluginId + '-' + this.panel.id + ' .content-wrap')[0];
-                this.onPanelSizeChanged();      // height update for scroll elements
+                this.elements.tags.mainWrap = $('#' + this.pluginId + '-' + this.panel.id)[0];
+                this.elements.tags.contentHeader = $('#' + this.pluginId + '-' + this.panel.id + ' .content-header')[0];
+                this.elements.tags.contentWrap = $('#' + this.pluginId + '-' + this.panel.id + ' .content-wrap')[0];
+                //this.onPanelSizeChanged();      // height update for scroll elements
             }
             return;
         }
@@ -619,7 +628,7 @@ class BpmPanelCtrl extends SvgPanelCtrl {
     }
 
     onRender(action) {
-        //$(this.panel.elMainWrap).closest('.panel-content').css('overflow', 'visible');    // change visibility for parent element of panel
+        //$(this.panel.mainWrap).closest('.panel-content').css('overflow', 'visible');    // change visibility for parent element of panel
         //console.log('!ON-RENDER', '');
         this.heightUpdate();
 
@@ -631,11 +640,11 @@ class BpmPanelCtrl extends SvgPanelCtrl {
             return;
         }
         if (action) {
-            console.log('ON-RENDER-BUILD ', this.data.values.normalized);
+            this.$log.log('ON-RENDER-BUILD ');
             this.chartBuildSvg(this.data.values.normalized);
         }
         if (!_.isEmpty(this.data.values.normalized.counters) && !action) {
-            console.log('ON-RENDER-UPDATE ', this.data.values.normalized);
+            this.$log.log('ON-RENDER-UPDATE ');
             this.chartBuildSvg(this.data.values.normalized);
         }
 

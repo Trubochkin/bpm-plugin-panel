@@ -42,16 +42,25 @@ div.content-wrap {
     overflow-x: hidden;
     overflow-y: auto;
     width: 100%; 
-    //position: relative;
+    position: relative;
+    
 
     div.wrap-vis {
+        position: relative;
         width: 100%;
         margin-bottom: 5px;
         background: $wrapVis-background;
         /* text-align: center; */
+        
+        canvas {
+            position: absolute;
+        }
+
         h3.wrap-vis-title {
             margin-left: 15px;
             margin-right: 20px;
+            // margin-top: 0px;
+            // margin-bottom: 0px;
             padding-top: 7px;
             text-align: right;
 
@@ -69,46 +78,50 @@ div.content-wrap {
             }
         }
 
-        svg {
-            /* background-color: #383838;
-            box-sizing: inherit;
-            display: inline-block;
-            /* position: abslute; */
-            // vertical-align: baseline;
+        div.wrap-vis-svg {
+            position: relative;
 
-            .axis {
-                stroke-width: 1;
-            }
-            
-            .axis .tick line {
-                stroke: $axisLineColor;
-            }
-            
-            .axis .tick text {
-                fill: $axisFontColor;
-                font-size: 10px;
-            }
-            
-            .axis .domain {
-                fill: none;
-                stroke: $axisLineColor;
-            }
-            
-            .focus-point circle {
-                fill: none;
-                stroke: $hoverLineColor;
-                stroke-opacity: 0.5;
-                stroke-width: 3px;
-            }
-            
-            .focus-point text {
-                fill: $axisFontColor;
-            }
+            svg.svg-area {
+                /* background-color: #383838;
+                box-sizing: inherit;
+                display: inline-block;
+                /* position: abslute; */
+                // vertical-align: baseline;
+    
+                .axis {
+                    stroke-width: 1;
+                }
                 
-            .hover-line {
-                stroke: $hoverLineColor;
-                stroke-width: 2px;
-                /* stroke-dasharray: 3,3; */
+                .axis .tick line {
+                    stroke: $axisLineColor;
+                }
+                
+                .axis .tick text {
+                    fill: $axisFontColor;
+                    font-size: 10px;
+                }
+                
+                .axis .domain {
+                    fill: none;
+                    stroke: $axisLineColor;
+                }
+                
+                .focus-point circle {
+                    fill: none;
+                    stroke: $hoverLineColor;
+                    stroke-opacity: 0.5;
+                    stroke-width: 3px;
+                }
+                
+                .focus-point text {
+                    fill: $axisFontColor;
+                }
+                    
+                .hover-line {
+                    stroke: $hoverLineColor;
+                    stroke-width: 2px;
+                    /* stroke-dasharray: 3,3; */
+                }
             }
         }
     }
