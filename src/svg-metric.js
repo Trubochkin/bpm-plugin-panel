@@ -160,10 +160,8 @@ export class SvgPanelCtrl extends MetricsPanelCtrl {
         const heightAreaVis = H - margin.top - margin.bottom;
         const heightRowBar = parseInt(heightAreaVis / dataLine.length);
 
-        const selectedTimeMs = new Date(dateTo).getTime() - new Date(dateFrom).getTime();
-
         const xScaleDuration = d3.scaleTime()
-            .domain([0, selectedTimeMs])
+            .domain([0, new Date(dateTo).getTime() - new Date(dateFrom).getTime()])
             .range([0, widthAreaVis]);
 
         const xScaleTime = d3.scaleTime()
@@ -230,7 +228,7 @@ export class SvgPanelCtrl extends MetricsPanelCtrl {
         const dateTo = this.range.to.clone();
         // const dataBars = data.statusLines[0];
 
-        // states canvas rendering 
+        // canvas rendering 
         let renderedCanvasElements = [];    // => [{id: '1.1', el: canvasElement}, ...]
         _.forEach(this.panel.selectedLinesId, id => {
             // filtering by id
@@ -260,6 +258,40 @@ export class SvgPanelCtrl extends MetricsPanelCtrl {
         const height = H - margin.top - margin.bottom;
         // console.log('WIDTH-GRAPH: ', width);
 
+
+        //Main Chart Scales
+        const xScale = d3.scaleTime()
+            .domain([new Date(dateFrom).getTime(), new Date(dateTo).getTime()])
+            .rangeRound([0, width]);
+
+        const yScale = d3.scaleLinear()
+            // .domain([d3.min(dCounter.datapoints.filter(d => !d.fake), d => d.y), d3.max(dCounter.datapoints, d => d.y)])
+            .rangeRound([height, 0]);
+
+        // Chart Axes
+        const xAxis = d3.axisBottom()
+            .scale(xScale)
+            .ticks(Math.round(width / 70));
+            // .tickFormat(d3.timeFormat('%H %M'));
+
+        const yAxis = d3.axisLeft()
+            .scale(yScale);
+            //d3.format(".2s")(42e6);
+
+        // Area of chart
+        const area = d3.area()
+            .x(d => xScale(d.t))
+            .y0(yScale(0))
+            .y1(d => yScale(d.y));
+            //.curve(d3.curveCatmullRom.alpha(0.3));
+
+        // Line of chart
+        const line = d3.line()
+            .x(d => xScale(d.t))
+            .y(d => yScale(d.y));
+            //.curve(d3.curveCatmullRom.alpha(0.5));
+
+
         const fKey = function (d) {
             return d ? 'p'+panelId + '-' + d.targetId : this.id; 
         };
@@ -269,43 +301,9 @@ export class SvgPanelCtrl extends MetricsPanelCtrl {
             .data(data.counters, fKey)
             .each( (dCounter, iCounter, eCounter) => {
                 //console.log('D3-each:', e);
-                
-                let bisectDate = d3.bisector(d => d.t).left;
                 // console.log('FORMAT', /* d3.format('.2f')(1) */ Math.round(3.0 * 100) / 100);
-
-                //Main Chart Scales
-                const xScale = d3.scaleTime()
-                    .domain([new Date(dateFrom).getTime(), new Date(dateTo).getTime()])
-                    .rangeRound([0, width]);
-
-                const yScale = d3.scaleLinear()
-                    .domain([d3.min(_.filter(dCounter.datapoints, obj => !obj.fake), d => d.y), d3.max(dCounter.datapoints, d => d.y)])
-                    .rangeRound([height, 0]);
-
-                // Chart Axes
-                const xAxis = d3.axisBottom()
-                    .scale(xScale)
-                    .ticks(Math.round(width / 70));
-                    // .tickFormat(d3.timeFormat('%H %M'));
-
-                const yAxis = d3.axisLeft()
-                    .scale(yScale);
-                    //d3.format(".2s")(42e6);
-
-                // Area of chart
-                const area = d3.area()
-                    .x(d => xScale(d.t))
-                    .y0(yScale(0))
-                    .y1(d => yScale(d.y));
-                    //.curve(d3.curveCatmullRom.alpha(0.3));
-
-                // Line of chart
-                const line = d3.line()
-                    .x(d => xScale(d.t))
-                    .y(d => yScale(d.y));
-                    //.curve(d3.curveCatmullRom.alpha(0.5));
-
-
+                yScale.domain([d3.min(dCounter.datapoints.filter(d => !d.fake), d => d.y), d3.max(dCounter.datapoints, d => d.y)]);
+                
                 let wrapVis = d3.select(eCounter[iCounter]);
 
                 // // UPDATE and DATA BINDING (counters)
@@ -341,7 +339,17 @@ export class SvgPanelCtrl extends MetricsPanelCtrl {
                 svgOld.select('.lineChart path')
                     .attr('d', line(dCounter.datapoints.filter(obj => !obj.fake)));
 
-                //console.log('wrapVis', wrapVis);
+                svgOld.selectAll('g rect.overlay')
+                    .data([dCounter])
+                    .attr('width', width)
+                    .attr('height', height);
+
+                /* svgOld.select('line')
+                    .attr('class', 'x-hover-line hover-line')
+                    .attr('y1', 0)
+                    .attr('y2', height); */
+
+                //console.log('rect.overlay', overlay);
                 // ENTER
                 const svg = svgOld.enter()
                     .append('div')
@@ -393,97 +401,148 @@ export class SvgPanelCtrl extends MetricsPanelCtrl {
                 wrapVis.node().insertBefore(canvasCloned, wrapVis.node().children[0]);
 
     
-                // Вставка области заливки графика
+                // AREA chart
                 gSvg.append('g')
-                    .attr('clip-path', 'url(#vis-clip)') // задание области видимости
+                    .attr('clip-path', 'url(#p'+panelId+'-vis-clip)') // задание области видимости
                     .attr('class', 'areaChart')
                     .append('path')
-                    .datum(dCounter.datapoints)
+                    //.datum(dCounter.datapoints)
                     .style('fill', 'blue')
                     .style('fill-opacity', 0.2)
-                    .attr('d', area(dCounter.datapoints));
+                    .attr('d', area(dCounter.datapoints.filter(obj => !obj.fake)));
+                    //.attr('transform', `translate(0, 0)`);
                     // .attr('stroke-width', '2px')
-                    // .attr('stroke', '#1400C7')
-                    //.attr('transform', `translate(${margin.left}, ${margin.top})`);
+                    // .attr('stroke', '#1400C7');
         
-                // Вставка линии графика
+                // LINE chart
                 gSvg.append('g')
                     .attr('clip-path', 'url(#p'+panelId+'-vis-clip)') // задание области видимости
                     .attr('class', 'lineChart')
                     .append('path')
                     .attr('d', line(dCounter.datapoints.filter(obj => !obj.fake)))
-                    .style('stroke', '#006cd1')
+                    .style('stroke', 'rgba(0, 80, 255, 0.4)')
                     .style('stroke-width', 2)
                     .style('fill-opacity', 0);
 
 
 
                 // Отображение tooltip и линии при наведении на график
-                const focus = gSvg.append('g')
-                    .attr('class', 'focus')
+                const gTooltip = gSvg.append('g')
+                    .attr('class', 'g-tooltip')
                     .style('display', 'none');
             
-                const focusLine = focus.append('g')
-                    .attr('class', 'focus-line');
-
-                focusLine.append('line')
-                    .attr('class', 'x-hover-line hover-line')
-                    .attr('y1', 0)
-                    .attr('y2', height);
+                gTooltip.append('line')
+                    .attr('class', 'tooltip-line');
             
-                focusLine.append('line')
-                    .attr('class', 'y-hover-line hover-line')
-                    .attr('x1', width)
-                    .attr('x2', width);
-            
-                const focusPoint = focus.append('g')
-                    .attr('class',  'focus-point');
-
-                focusPoint.append('circle')
-                    .attr('r', 7.5);
-            
-                focusPoint.append('text')
+                const tooltipPoint = gTooltip.append('g')
+                    .attr('class',  'tooltip-point');
+                tooltipPoint.append('circle')
+                    .attr('r', 6);
+                tooltipPoint.append('text')
                     .attr('x', 15)
                     .attr('dy', '.31em');
                 
-                gSvg.append('rect')
+                gSvg.selectAll('g rect.overlay')
+                    .data([dCounter], d => d)
+                    .enter().append('rect')
                     .attr('class', 'overlay')
                     .attr('width', width)
                     .attr('height', height)
                     .style('pointer-events', 'all')
                     .style('fill', 'none')
-                    .on('mouseover', () => focus.style('display', null))
-                    .on('mouseout', () => focus.style('display', 'none'))
-                    .on('mousemove', mousemove);
+                    .on('mouseover', () => gTooltip.style('display', null))
+                    .on('mouseout', () => gTooltip.style('display', 'none'))
+                    .on('mousemove', (dataC, indx, el) => {
+                        //let data = dataNorm.filter(obj => !obj.fake);
+                        console.log('event', data);
 
-                let tooltip = this.$tooltip;
+                        const dateFrom = this.range.from.clone();
+                        const dateTo = this.range.to.clone();
+                        
+                        const parentRect = d3.select(el[indx].parentNode);
+                        const rectEl = el[indx];
+                        const rectHeight = d3.select(rectEl).attr('height');
+                        const rectWidth = d3.select(rectEl).attr('width');
+    
+                        const bisectDate = d3.bisector(d => d.t).left;
+                        
+                        const xScaleEvt = d3.scaleTime()
+                            .domain([new Date(dateFrom).getTime(), new Date(dateTo).getTime()])
+                            .rangeRound([0, rectWidth]);
+    
+                        const yScaleEvt = d3.scaleLinear()
+                            .domain([d3.min(dataC.datapoints.filter(d => !d.fake), d => d.y), d3.max(dataC.datapoints, d => d.y)])
+                            .rangeRound([rectHeight, 0]);
+    
+                        const data = dataC.datapoints;
+                        
+                        const x0 = xScaleEvt.invert(d3.mouse(rectEl)[0]),
+                            i = bisectDate(data, x0, 1),
+                            d0 = data[i - 1],
+                            d1 = data[i];
+                            //d = { 't': 0, 'v': 0 };
+    
+                        if (d0 && d1) {
+                            const dPoint = x0 - d0.t > d1.t - x0 ? d1 : d0;
+                            parentRect.select('.tooltip-point').select('circle')
+                                .attr('transform', 'translate(' + xScaleEvt(dPoint.t) + ',' + yScaleEvt(dPoint.y) + ')');
+                            parentRect.select('.tooltip-point').select('text')
+                                .text(function() { return dPoint.y; })
+                                .attr('x', d3.mouse(rectEl)[0]+15)
+                                .attr('y', d3.mouse(rectEl)[1]);
+                            // focus.select('.x-hover-line').attr('y2', height - yScaleEvt(d.v));
+                            // parentRect.select('.tooltip-line').attr('transform', 'translate(' + xScaleEvt(dPoint.t) + ', 0)');
+                            // parentRect.select('.focus-line').select('.y-hover-line').attr('x2', rectWidth + rectWidth);
+
+                            parentRect.select('.g-tooltip .tooltip-line')
+                                .attr('x1', xScaleEvt(dPoint.t))
+                                .attr('y1', 0)
+                                .attr('x2', xScaleEvt(dPoint.t))
+                                .attr('y2', rectHeight);
+                            // console.log('TOOLTIP', $(this).position());
+                            // tooltip.html('<div><i>I\'m tooltip!</i></div>').place_tt(d3.mouse(this)[0] + 20, d3.mouse(this)[1] + 5 + $(this).position().top);
+                        }
+                    });
+
+                // let tooltip = this.$tooltip;
                 
-                function mousemove() {
-                    //let data = dataNorm.filter(obj => !obj.fake);
-                    let data = dCounter.datapoints;
-                    
-                    let x0 = xScale.invert(d3.mouse(this)[0]),
-                        i = bisectDate(data, x0, 1),
-                        d0 = data[i - 1],
-                        d1 = data[i];
-                        //d = { 't': 0, 'v': 0 };
+                // function mousemove(dataC, indx, el) {
+                //     //console.log('event', dataC, el);
+                //     //let data = dataNorm.filter(obj => !obj.fake);
+                //     console.log('event', this, el);
+                //     const rectHeight = d3.select(this).attr('height');
+                //     const rectWidth = d3.select(this).attr('width');
 
-                    if (d0 && d1) {
-                        var d = x0 - d0.t > d1.t - x0 ? d1 : d0;
-                        focusPoint.select('circle').attr('transform', 'translate(' + xScale(d.t) + ',' + yScale(d.y) + ')');
-                        focusPoint.select('text')
-                            .text(function() { return d.y; })
-                            .attr('x', d3.mouse(this)[0]+15)
-                            .attr('y', d3.mouse(this)[1]);
-                        // focus.select('.x-hover-line').attr('y2', height - yScale(d.v));
-                        focusLine.attr('transform', 'translate(' + xScale(d.t) + ', 0)');
-                        focusLine.select('.y-hover-line').attr('x2', width + width);
-                        // console.log('TOOLTIP', $(this).position());
-                        // tooltip.html('<div><i>I\'m tooltip!</i></div>').place_tt(d3.mouse(this)[0] + 20, d3.mouse(this)[1] + 5 + $(this).position().top);
-                    }
+                //     const xScaleEvt = d3.scaleTime()
+                //         .domain([new Date(dateFrom).getTime(), new Date(dateTo).getTime()])
+                //         .rangeRound([0, rectWidth]);
 
+                //     const yScaleEvt = d3.scaleLinear()
+                //         .domain([d3.min(_.filter(dataC.datapoints, obj => !obj.fake), d => d.y), d3.max(dataC.datapoints, d => d.y)])
+                //         .rangeRound([rectHeight, 0]);
+
+                //     let data = dataC.datapoints;
                     
-                }
+                //     let x0 = xScaleEvt.invert(d3.mouse(this)[0]),
+                //         i = bisectDate(data, x0, 1),
+                //         d0 = data[i - 1],
+                //         d1 = data[i];
+                //         //d = { 't': 0, 'v': 0 };
+
+                //     if (d0 && d1) {
+                //         var d = x0 - d0.t > d1.t - x0 ? d1 : d0;
+                //         focusPoint.select('circle').attr('transform', 'translate(' + xScaleEvt(d.t) + ',' + yScaleEvt(d.y) + ')');
+                //         focusPoint.select('text')
+                //             .text(function() { return d.y; })
+                //             .attr('x', d3.mouse(this)[0]+15)
+                //             .attr('y', d3.mouse(this)[1]);
+                //         // focus.select('.x-hover-line').attr('y2', height - yScaleEvt(d.v));
+                //         focusLine.attr('transform', 'translate(' + xScaleEvt(d.t) + ', 0)');
+                //         focusLine.select('.y-hover-line').attr('x2', rectWidth + rectWidth);
+                //         // console.log('TOOLTIP', $(this).position());
+                //         // tooltip.html('<div><i>I\'m tooltip!</i></div>').place_tt(d3.mouse(this)[0] + 20, d3.mouse(this)[1] + 5 + $(this).position().top);
+                //     }
+                // }
             });
     }
 

@@ -6,8 +6,7 @@ $wrapVis-background: rgba(49, 49, 49, 0.5);
 $axisLineColor: #ffffff;        // цвет лини осей и тиков
 $axisFontColor: #ffffff;        // цвет текста и цифр на осях
 $tooltipFontColor: #ffffff;     // цвет текста в всплывающих подсказках
-$hoverLineColor: #990000;       // цвет линии при ведении мыши над графиком
-
+$tooltipLineColor: #b40000;       // цвет линии при ведении мыши над графиком
 
 .grafana-tooltip {
     background-color: $tooltip-background;
@@ -106,20 +105,20 @@ div.content-wrap {
                     stroke: $axisLineColor;
                 }
                 
-                .focus-point circle {
+                .tooltip-point circle {
                     fill: none;
-                    stroke: $hoverLineColor;
+                    stroke: $tooltipLineColor;
                     stroke-opacity: 0.5;
                     stroke-width: 3px;
                 }
                 
-                .focus-point text {
+                .tooltip-point text {
                     fill: $axisFontColor;
                 }
                     
-                .hover-line {
-                    stroke: $hoverLineColor;
-                    stroke-width: 2px;
+                .tooltip-line {
+                    stroke: $tooltipLineColor;
+                    stroke-width: 1px;
                     /* stroke-dasharray: 3,3; */
                 }
             }

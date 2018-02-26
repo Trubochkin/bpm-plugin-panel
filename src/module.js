@@ -177,7 +177,7 @@ class BpmPanelCtrl extends SvgPanelCtrl {
         let contentWrapWidth = $(this.elements.tags.contentWrap).prop('clientWidth');
         $(elTreeContainer).css({'max-height': (this.height - headerHeight) +'px'});
         $(elTreeContainer).css({'max-width': contentWrapWidth +'px'});
-        $(this.elements.tags.contentWrap).css({'max-height': (this.height - headerHeight) +'px'});
+        $(this.elements.tags.contentWrap).css({'height': (this.height - headerHeight) +'px'});
     }
 
     convertDataToNestedTree(data) {
