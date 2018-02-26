@@ -167,10 +167,10 @@ class BpmPanelCtrl extends SvgPanelCtrl {
 
     onPanelSizeChanged() {
         //console.log('RESAZE-PANEL-DONE');
-        //this.heightUpdate();
+        //this.updateHeight();
     }
 
-    heightUpdate() {
+    updateHeight() {
         // height update for scroll elements
         let elTreeContainer = $('#' + this.pluginId + '-' + this.panel.id + ' .content-header .tree-container')[0];
         let headerHeight = $(this.elements.tags.contentHeader).prop('clientHeight');
@@ -332,14 +332,14 @@ class BpmPanelCtrl extends SvgPanelCtrl {
                         'stripes' : false           // фоновая зебра
                     },
                     'multiple' : true,              // multiselection
-                    'worker' : false,               // чтоб не было ошибки
+                    'worker' : false,               // чтоб не было ошибки - false
                 },
                 'types' : {
                     'counter' : { 'icon' : 'fa fa-tachometer', 'a_attr' : { 'style': 'background: none' }},
                     'line' : { 'icon' : 'fa fa-tasks', 'a_attr' : { 'style': 'background: none' }},
                     'city' : { 'icon' : 'fa fa-industry', 'a_attr' : { 'style': 'background: none' }},
                 },
-                'plugins' : ['checkbox', 'themes', 'types'/* "ui" */]
+                'plugins' : ['checkbox', 'themes', 'types'/*, 'sort'*/]
 
             // tree is ready
             }).on('ready.jstree', (e, data) => {
@@ -630,7 +630,7 @@ class BpmPanelCtrl extends SvgPanelCtrl {
     onRender(action) {
         //$(this.panel.mainWrap).closest('.panel-content').css('overflow', 'visible');    // change visibility for parent element of panel
         //console.log('!ON-RENDER', '');
-        this.heightUpdate();
+        this.updateHeight();
 
         if (!this.data.values.normalized) {
             return;

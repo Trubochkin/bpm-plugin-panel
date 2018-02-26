@@ -144,7 +144,7 @@ export class SvgPanelCtrl extends MetricsPanelCtrl {
         d3.select(this.elements.tags.contentWrap)
             .select('#p'+this.panel.id+'-'+targetIdCorrect)
             .remove();
-        console.log('Remove-SVG:', targetId);
+        // console.log('Remove-SVG:', targetId);
     }
 
     // dataLine = [[changes1], [changes2], ...]
@@ -200,14 +200,6 @@ export class SvgPanelCtrl extends MetricsPanelCtrl {
         //create a new canvas
         var newCanvas = document.createElement('canvas');
         var context = newCanvas.getContext('2d');
-    
-        const marginTop = d3.select(oldCanvas).style('margin-top');
-        const marginLeft = d3.select(oldCanvas).style('margin-left');
-
-        d3.select(newCanvas)
-            .style('margin-top', marginTop)
-            .style('margin-left', marginLeft)
-            .style('opacity', '0.3');
 
         //set dimensions
         newCanvas.width = oldCanvas.width;
@@ -304,119 +296,116 @@ export class SvgPanelCtrl extends MetricsPanelCtrl {
                 // console.log('FORMAT', /* d3.format('.2f')(1) */ Math.round(3.0 * 100) / 100);
                 yScale.domain([d3.min(dCounter.datapoints.filter(d => !d.fake), d => d.y), d3.max(dCounter.datapoints, d => d.y)]);
                 
-                let wrapVis = d3.select(eCounter[iCounter]);
+                const wrapVis = d3.select(eCounter[iCounter]);
 
-                // // UPDATE and DATA BINDING (counters)
-                let svgOld = wrapVis.selectAll('.wrap-vis-svg svg.svg-area')
-                    .data([dCounter]);
-                // console.log('svgOld', svgOld);
+                // UPDATE
 
                 wrapVis.select('span').classed('loaded', true);     // hide spinner status
-                // текст заголовка графика
+
+                // update the title text
                 wrapVis.select('h3')
                     .attr('class', 'wrap-vis-title')
                     .style('font-size', this.panel.textSizeTitles+'px');
-                // параметры высоты и ширины всего SVG
+
+                // data binding
+                const svgOld = wrapVis.selectAll('.wrap-vis-svg svg')
+                    .data([dCounter]);
+                
+                // update height and width the SVG
                 svgOld.attr('height', H)
                     .attr('width', W);
-                // Прямоугольник видимости
+
+                // update the rectangle of clip-path
                 svgOld.select('#p'+panelId+'-vis-clip rect')
                     .attr('width', width)
                     .attr('height', height)
                     .attr('transform', 'translate(1, -1)');
-                // параметры оси X
+
+                // update x-axis
                 svgOld.select('g.x.axis')
                     .attr('transform', `translate(0, ${height})`)
                     .call(xAxis);
-                // параметры оси Y
+
+                // update y-axis
                 svgOld.select('g.y.axis')
                     .attr('transform', 'translate(0, 0)')
                     .call(yAxis);
-     
+
+                // update area-chart
                 svgOld.select('.areaChart path')
                     .attr('d', area(dCounter.datapoints.filter(obj => !obj.fake)));
 
+                // update line-chart
                 svgOld.select('.lineChart path')
                     .attr('d', line(dCounter.datapoints.filter(obj => !obj.fake)));
 
+                // update the overlay rectangle for mouse events
                 svgOld.selectAll('g rect.overlay')
                     .data([dCounter])
                     .attr('width', width)
                     .attr('height', height);
 
-                /* svgOld.select('line')
-                    .attr('class', 'x-hover-line hover-line')
-                    .attr('y1', 0)
-                    .attr('y2', height); */
-
-                //console.log('rect.overlay', overlay);
                 // ENTER
-                const svg = svgOld.enter()
+
+                // create SVG element in div wrap
+                const svgEl = svgOld.enter()
                     .append('div')
                     .attr('class', 'wrap-vis-svg')
                     .append('svg')
                     .attr('width', W)
-                    /* .transition()
-                    .duration(400) */
-                    .attr('height', H)
-                    .attr('class', 'svg-area');
-        
-                // вставка группы для всего визуального содержимого (g элементы не имеют размеров)
-                const gSvg = svg.append('g')
-                    .attr('transform', `translate(${margin.left},${margin.top})`);
-                
-                // console.log('D3-each:', svg);
+                    .attr('height', H);
 
-                // Вставка прямоугольника видимости графика
+                // append g element for all svg content (g элементы не имеют размеров)
+                const gSvg = svgEl.append('g')
+                    .attr('transform', `translate(${margin.left},${margin.top})`);
+
+                // append clip-path rectangle
                 gSvg.append('clipPath')
                     .attr('id', 'p'+panelId+'-vis-clip')
                     .append('rect')
                     .attr('width', width)
                     .attr('height', height)
                     .attr('transform', 'translate(1, -1)');
-                
-                // Вставка оси X
+                // append x-axis
                 gSvg.append('g')
                     .classed('x axis', true)
                     .attr('transform', `translate(0, ${height})`)
                     .call(xAxis);
 
-                // Вставка оси Y
+                // append y-axis
                 gSvg.append('g')
                     .classed('y axis', true)
                     .attr('transform', 'translate(0, 0)')
                     .call(yAxis);
 
-
+                // clear background CANVAS chart
                 wrapVis.selectAll('canvas')
                     .remove();
 
+                // clone and append the background CANVAS chart
                 const heightWrapVisTitle = $(wrapVis.select('.wrap-vis-title').node()).outerHeight(true);
-                let canvasD3 = renderedCanvasElements[0].el
+                const canvasOrigEl = renderedCanvasElements[0].el.node();
+                const canvasCopy = d3.select(this.cloneCanvas(canvasOrigEl))
                     .style('margin-left', margin.left + 'px')
-                    .style('margin-top', margin.top + heightWrapVisTitle + 'px');
-                const canvasCloned = this.cloneCanvas(canvasD3.node());
-                
-                //obj.id = renderedCanvasElements[0].id + iCounter;
-                wrapVis.node().insertBefore(canvasCloned, wrapVis.node().children[0]);
+                    .style('margin-top', margin.top + heightWrapVisTitle + 'px')
+                    .style('opacity', '0.3')
+                    .node();
+                const wrapEl = wrapVis.node();
+                wrapEl.insertBefore(canvasCopy, wrapEl.children[0]);
 
     
-                // AREA chart
+                // append AREA chart
                 gSvg.append('g')
-                    .attr('clip-path', 'url(#p'+panelId+'-vis-clip)') // задание области видимости
+                    .attr('clip-path', 'url(#p'+panelId+'-vis-clip)')
                     .attr('class', 'areaChart')
                     .append('path')
-                    //.datum(dCounter.datapoints)
+                    .attr('d', area(dCounter.datapoints.filter(obj => !obj.fake)))
                     .style('fill', 'blue')
-                    .style('fill-opacity', 0.2)
-                    .attr('d', area(dCounter.datapoints.filter(obj => !obj.fake)));
-                    //.attr('transform', `translate(0, 0)`);
-                    // .attr('stroke-width', '2px')
-                    // .attr('stroke', '#1400C7');
+                    .style('fill-opacity', 0.3);
         
-                // LINE chart
+                // append LINE chart
                 gSvg.append('g')
-                    .attr('clip-path', 'url(#p'+panelId+'-vis-clip)') // задание области видимости
+                    .attr('clip-path', 'url(#p'+panelId+'-vis-clip)')
                     .attr('class', 'lineChart')
                     .append('path')
                     .attr('d', line(dCounter.datapoints.filter(obj => !obj.fake)))
@@ -425,25 +414,27 @@ export class SvgPanelCtrl extends MetricsPanelCtrl {
                     .style('fill-opacity', 0);
 
 
-
-                // Отображение tooltip и линии при наведении на график
+                // append group for tooltip elements
                 const gTooltip = gSvg.append('g')
                     .attr('class', 'g-tooltip')
                     .style('display', 'none');
-            
+
+                // append a vertical line
                 gTooltip.append('line')
                     .attr('class', 'tooltip-line');
-            
+
+                // append a point circle
                 const tooltipPoint = gTooltip.append('g')
                     .attr('class',  'tooltip-point');
                 tooltipPoint.append('circle')
                     .attr('r', 6);
-                tooltipPoint.append('text')
+                tooltipPoint.append('text')             // !!!!!!! заменить на DIV
                     .attr('x', 15)
                     .attr('dy', '.31em');
                 
+                // append an overlay rectangle for mouse events
                 gSvg.selectAll('g rect.overlay')
-                    .data([dCounter], d => d)
+                    .data([dCounter])
                     .enter().append('rect')
                     .attr('class', 'overlay')
                     .attr('width', width)
@@ -453,9 +444,7 @@ export class SvgPanelCtrl extends MetricsPanelCtrl {
                     .on('mouseover', () => gTooltip.style('display', null))
                     .on('mouseout', () => gTooltip.style('display', 'none'))
                     .on('mousemove', (dataC, indx, el) => {
-                        //let data = dataNorm.filter(obj => !obj.fake);
-                        console.log('event', data);
-
+                        // console.log('event', data);
                         const dateFrom = this.range.from.clone();
                         const dateTo = this.range.to.clone();
                         
@@ -490,63 +479,18 @@ export class SvgPanelCtrl extends MetricsPanelCtrl {
                                 .text(function() { return dPoint.y; })
                                 .attr('x', d3.mouse(rectEl)[0]+15)
                                 .attr('y', d3.mouse(rectEl)[1]);
-                            // focus.select('.x-hover-line').attr('y2', height - yScaleEvt(d.v));
-                            // parentRect.select('.tooltip-line').attr('transform', 'translate(' + xScaleEvt(dPoint.t) + ', 0)');
-                            // parentRect.select('.focus-line').select('.y-hover-line').attr('x2', rectWidth + rectWidth);
 
                             parentRect.select('.g-tooltip .tooltip-line')
                                 .attr('x1', xScaleEvt(dPoint.t))
                                 .attr('y1', 0)
                                 .attr('x2', xScaleEvt(dPoint.t))
                                 .attr('y2', rectHeight);
-                            // console.log('TOOLTIP', $(this).position());
-                            // tooltip.html('<div><i>I\'m tooltip!</i></div>').place_tt(d3.mouse(this)[0] + 20, d3.mouse(this)[1] + 5 + $(this).position().top);
                         }
                     });
-
-                // let tooltip = this.$tooltip;
-                
-                // function mousemove(dataC, indx, el) {
-                //     //console.log('event', dataC, el);
-                //     //let data = dataNorm.filter(obj => !obj.fake);
-                //     console.log('event', this, el);
-                //     const rectHeight = d3.select(this).attr('height');
-                //     const rectWidth = d3.select(this).attr('width');
-
-                //     const xScaleEvt = d3.scaleTime()
-                //         .domain([new Date(dateFrom).getTime(), new Date(dateTo).getTime()])
-                //         .rangeRound([0, rectWidth]);
-
-                //     const yScaleEvt = d3.scaleLinear()
-                //         .domain([d3.min(_.filter(dataC.datapoints, obj => !obj.fake), d => d.y), d3.max(dataC.datapoints, d => d.y)])
-                //         .rangeRound([rectHeight, 0]);
-
-                //     let data = dataC.datapoints;
-                    
-                //     let x0 = xScaleEvt.invert(d3.mouse(this)[0]),
-                //         i = bisectDate(data, x0, 1),
-                //         d0 = data[i - 1],
-                //         d1 = data[i];
-                //         //d = { 't': 0, 'v': 0 };
-
-                //     if (d0 && d1) {
-                //         var d = x0 - d0.t > d1.t - x0 ? d1 : d0;
-                //         focusPoint.select('circle').attr('transform', 'translate(' + xScaleEvt(d.t) + ',' + yScaleEvt(d.y) + ')');
-                //         focusPoint.select('text')
-                //             .text(function() { return d.y; })
-                //             .attr('x', d3.mouse(this)[0]+15)
-                //             .attr('y', d3.mouse(this)[1]);
-                //         // focus.select('.x-hover-line').attr('y2', height - yScaleEvt(d.v));
-                //         focusLine.attr('transform', 'translate(' + xScaleEvt(d.t) + ', 0)');
-                //         focusLine.select('.y-hover-line').attr('x2', rectWidth + rectWidth);
-                //         // console.log('TOOLTIP', $(this).position());
-                //         // tooltip.html('<div><i>I\'m tooltip!</i></div>').place_tt(d3.mouse(this)[0] + 20, d3.mouse(this)[1] + 5 + $(this).position().top);
-                //     }
-                // }
             });
     }
 
-    link(scope, elem/* , attrs, ctrl */) {
+    link(/*scope, elem , attrs, ctrl */) {
 
         /* this.chartContainer = elem.find('.chart-container')[0];
         this.canvasElem = document.createElement('canvas');
