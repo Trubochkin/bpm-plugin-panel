@@ -1,13 +1,11 @@
 import {MetricsPanelCtrl} from 'app/plugins/sdk';
 import _ from 'lodash';
 // import moment from 'moment';
-//import angular from 'angular';
+// import angular from 'angular';
 import $ from 'jquery';
 import * as d3 from 'd3';
-// import * as Chart from './lib/chart/Chart.bundle.min';
-// import './lib/chart/chartjs-plugin-stacked100/index';
 
-//import appEvents from 'app/core/app_events';
+// import appEvents from 'app/core/app_events';
 
 var canvasID = 1;
 var svgID = 1;
@@ -300,10 +298,14 @@ export class ChartsBuildPanelCtrl extends MetricsPanelCtrl {
 
                 // UPDATE
 
-                wrapVis.select('i').classed('loaded', true);     // hide spinner status
+                // update spinner status
+                wrapVis.select('i')
+                    .classed('loaded', true)
+                    .style('font-size', this.panel.textSizeTitles+'px');     
 
                 // update the title text
                 wrapVis.select('div .wrap-vis-title')
+                    .selectAll('span')
                     .style('font-size', this.panel.textSizeTitles+'px');
 
                 // data binding
@@ -440,14 +442,17 @@ export class ChartsBuildPanelCtrl extends MetricsPanelCtrl {
                     .attr('height', height)
                     .style('pointer-events', 'all')
                     .style('fill', 'none')
-                    .on('mouseover', () => gTooltip.style('display', null))
-                    .on('mouseout', () => gTooltip.style('display', 'none'))
+                    .on('mouseover', () => {
+                        gTooltip.style('display', null);
+                    })
+                    .on('mouseout', () => {
+                        gTooltip.style('display', 'none');
+                    })
                     .on('mousemove', (dataC, indx, el) => {
                         // console.log('event', data);
                         const dateFrom = this.range.from.clone();
                         const dateTo = this.range.to.clone();
-                        
-                        const parentRect = d3.select(el[indx].parentNode);
+                        const gSvg = d3.select(el[indx].parentNode);
                         const rectEl = el[indx];
                         const rectHeight = d3.select(rectEl).attr('height');
                         const rectWidth = d3.select(rectEl).attr('width');
@@ -472,14 +477,15 @@ export class ChartsBuildPanelCtrl extends MetricsPanelCtrl {
     
                         if (d0 && d1) {
                             const dPoint = x0 - d0.t > d1.t - x0 ? d1 : d0;
-                            parentRect.select('.tooltip-point').select('circle')
+                            gSvg.select('.tooltip-point').select('circle')
                                 .attr('transform', 'translate(' + xScaleEvt(dPoint.t) + ',' + yScaleEvt(dPoint.y) + ')');
-                            parentRect.select('.tooltip-point').select('text')
+
+                            gSvg.select('.tooltip-point').select('text')
                                 .text(function() { return dPoint.y; })
                                 .attr('x', d3.mouse(rectEl)[0]+15)
                                 .attr('y', d3.mouse(rectEl)[1]);
 
-                            parentRect.select('.g-tooltip .tooltip-line')
+                            gSvg.select('.g-tooltip .tooltip-line')
                                 .attr('x1', xScaleEvt(dPoint.t))
                                 .attr('y1', 0)
                                 .attr('x2', xScaleEvt(dPoint.t))

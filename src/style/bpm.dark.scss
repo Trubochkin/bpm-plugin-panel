@@ -65,21 +65,11 @@ div.content-wrap {
             padding-top: 7px;
             text-align: right;
 
-            span.city {
-                color: #A7D999;
-            }
-            span.line {
-                color: #F6AE66;
-            }
-            span.counter {
-                color: #a3cae2
-            }
-            i.loaded {
-                display: none;
-            }
-            span.title-separator {
-                margin: 0 8px 0 8px;
-            }
+            span.city {color: #A7D999;}
+            span.line {color: #F6AE66;}
+            span.counter {color: #a3cae2}
+            span.title-separator {margin: 0 8px 0 8px;}
+            i.loaded {display: none;}
         }
 
         div.wrap-vis-svg {
