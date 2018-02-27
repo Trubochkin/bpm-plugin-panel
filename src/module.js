@@ -3,7 +3,7 @@ import './lib/jstree/themes/default/style.min.css!';
 import './lib/jstree/jstree.min';
 // import './directives/d-tree-view';
 // import config from 'app/core/config';
-import {SvgPanelCtrl} from './svg-metric';
+import {ChartsBuildPanelCtrl} from './charts-actions';
 import DistinctPoints from './points';
 import _ from 'lodash';
 import $ from 'jquery';
@@ -22,7 +22,7 @@ loadPluginCss({
 });
 
 
-class BpmPanelCtrl extends SvgPanelCtrl {
+class BpmPanelCtrl extends ChartsBuildPanelCtrl {
 
     constructor($scope, $log, $injector, $q, $http, alertSrv, datasourceSrv, contextSrv, $rootScope, dashboardSrv, timeSrv) {
         super($scope, $injector, $q);
@@ -452,7 +452,7 @@ class BpmPanelCtrl extends SvgPanelCtrl {
                     .then(data => {
                         this.loading = false;
                         this.onDataReceived(data.data);
-                        this.onRender();
+                        // this.onRender();
                     }).catch (err => {
                         if (err.cancelled) {
                             this.loading = false;
@@ -639,14 +639,16 @@ class BpmPanelCtrl extends SvgPanelCtrl {
             //console.log('ON-RENDER-NODATA');
             return;
         }
-        if (action) {
-            this.$log.log('ON-RENDER-BUILD ');
-            this.chartBuildSvg(this.data.values.normalized);
-        }
-        if (!_.isEmpty(this.data.values.normalized.counters) && !action) {
-            this.$log.log('ON-RENDER-UPDATE ');
-            this.chartBuildSvg(this.data.values.normalized);
-        }
+        // if (action) {
+        //     this.$log.log('ON-RENDER-BUILD ');
+        //     this.chartBuildSvg(this.data.values.normalized);
+        // }
+        // if (!_.isEmpty(this.data.values.normalized.counters) && !action) {
+        //     this.$log.log('ON-RENDER-UPDATE ');
+        //     this.chartBuildSvg(this.data.values.normalized);
+        // }
+        this.$log.log('ON-RENDER');
+        this.chartBuildSvg(this.data.values.normalized);
 
 /* 
         //$('.panel-main-wrap').css({'max-height': (this.height) +'px'});

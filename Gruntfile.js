@@ -94,7 +94,7 @@ module.exports = (grunt) => {
                 files: [
                     {src:'dist/build/module.js', dest: 'dist/module.js'},
                     {src:'dist/build/points.js', dest: 'dist/points.js'},
-                    {src:'dist/build/svg-metric.js', dest: 'dist/svg-metric.js'},
+                    {src:'dist/build/charts-actions.js', dest: 'dist/charts-actions.js'},
                 ]
             }
         },

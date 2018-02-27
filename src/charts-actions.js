@@ -13,7 +13,7 @@ var canvasID = 1;
 var svgID = 1;
 
 // Expects a template with: <div class="canvas-spot"></div>
-export class SvgPanelCtrl extends MetricsPanelCtrl {
+export class ChartsBuildPanelCtrl extends MetricsPanelCtrl {
 
     constructor($scope, $injector, $q) {
         super($scope, $injector);
