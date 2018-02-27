@@ -96,12 +96,12 @@ export class ChartsBuildPanelCtrl extends MetricsPanelCtrl {
         var targetName = this.convertIdToName(targetId);
         var wrapVis;
         if (this.panel.ascData) {
-            wrapVis = d3.select(this.elements.tags.contentWrap)
+            wrapVis = d3.select(this.elements.$tags.contentWrap)
                 .append('div')
                 .attr('class', 'wrap-vis')
                 .attr('id', 'p'+ this.panel.id + '-' + targetId); // example ID format: 1.1.1-p3
         } else {
-            wrapVis = d3.select(this.elements.tags.contentWrap)
+            wrapVis = d3.select(this.elements.$tags.contentWrap)
                 .insert('div',':first-child')
                 .attr('class', 'wrap-vis')
                 .attr('id', 'p'+ this.panel.id + '-' + targetId); // example ID format: 1.1.1-p3
@@ -109,27 +109,27 @@ export class ChartsBuildPanelCtrl extends MetricsPanelCtrl {
             
         // console.log('ChartD3', wrapVis);
         // Multicolored chart title (color setting in CSS)
-        var title = wrapVis.append('h3')
-            .attr('class', 'wrap-vis-title')
-            .style('font-size', this.panel.textSizeTitles+'px');
-        title.append('font')
+        var title = wrapVis.append('div')
+            .attr('class', 'wrap-vis-title');
+        title.append('span')
             .html(targetName[0])
-            .attr('class', 'city');
-        title.append('b').html(' - ');
-        title.append('font')
-            .html(targetName[1])
-            .attr('class', 'line');
-        title.append('b').html(' - ');
-        title.append('font')
-            .html(targetName[2])
-            .attr('class', 'counter');
-        title.append('b').html(' ');
-
-        var spiner = title.append('span');
-        spiner.append('i')
-            .attr('class', 'fa fa-spinner fa-spin')
-            .style('font-size', '30px')
+            .attr('class', 'city')
             .style('font-size', this.panel.textSizeTitles+'px');
+        title.append('span').attr('class', 'title-separator').html('-');
+        title.append('span')
+            .html(targetName[1])
+            .attr('class', 'line')
+            .style('font-size', this.panel.textSizeTitles+'px');
+        title.append('span').attr('class', 'title-separator').html('-');
+        title.append('span')
+            .html(targetName[2])
+            .attr('class', 'counter')
+            .style('font-size', this.panel.textSizeTitles+'px');
+
+        title.append('i')
+            .attr('class', 'fa fa-spinner fa-spin')
+            .style('font-size', this.panel.textSizeTitles+'px')
+            .style('margin-left', 10 + 'px');
         /* var visMessage = wrapVis.append('span');
         visMessage.append('i')
             .attr('class', 'fa fa-spinner fa-spin')
@@ -141,7 +141,7 @@ export class ChartsBuildPanelCtrl extends MetricsPanelCtrl {
 
     chart_removeWrapVis(targetId) {
         var targetIdCorrect = targetId.split('.').join('\\.');  // экранирование точек для корректной выборки
-        d3.select(this.elements.tags.contentWrap)
+        d3.select(this.elements.$tags.contentWrap)
             .select('#p'+this.panel.id+'-'+targetIdCorrect)
             .remove();
         // console.log('Remove-SVG:', targetId);
@@ -149,7 +149,7 @@ export class ChartsBuildPanelCtrl extends MetricsPanelCtrl {
 
     // dataLine = [[changes1], [changes2], ...]
     drawCanvas(dataLine) {
-        const W = +this.elements.tags.contentWrap.getBoundingClientRect().width;
+        const W = +this.elements.$tags.contentWrap.getBoundingClientRect().width;
         const H = +this.panel.svgHeight;
         const dateFrom = this.range.from.clone();
         const dateTo = this.range.to.clone();
@@ -241,7 +241,7 @@ export class ChartsBuildPanelCtrl extends MetricsPanelCtrl {
         
         // console.log('!!!d3.scaleOrdinal: ', d3.schemeCategory10[1]);
         // width and height of the whole SVG
-        const W = +this.elements.tags.contentWrap.getBoundingClientRect().width;
+        const W = +this.elements.$tags.contentWrap.getBoundingClientRect().width;
         const H = +this.panel.svgHeight;
 
         // for the data visualization area
@@ -288,7 +288,7 @@ export class ChartsBuildPanelCtrl extends MetricsPanelCtrl {
             return d ? 'p'+panelId + '-' + d.targetId : this.id; 
         };
 
-        d3.select(this.elements.tags.contentWrap)
+        d3.select(this.elements.$tags.contentWrap)
             .selectAll('div.wrap-vis')
             .data(data.counters, fKey)
             .each( (dCounter, iCounter, eCounter) => {
@@ -300,11 +300,10 @@ export class ChartsBuildPanelCtrl extends MetricsPanelCtrl {
 
                 // UPDATE
 
-                wrapVis.select('span').classed('loaded', true);     // hide spinner status
+                wrapVis.select('i').classed('loaded', true);     // hide spinner status
 
                 // update the title text
-                wrapVis.select('h3')
-                    .attr('class', 'wrap-vis-title')
+                wrapVis.select('div .wrap-vis-title')
                     .style('font-size', this.panel.textSizeTitles+'px');
 
                 // data binding

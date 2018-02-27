@@ -132,7 +132,7 @@ class BpmPanelCtrl extends ChartsBuildPanelCtrl {
             }
         };
         this.elements = {
-            tags: {},
+            $tags: {},
             sizes: {
                 marginAreaVis: { top: 5, right: 20, bottom: 20, left: 40 }
             }
@@ -173,11 +173,11 @@ class BpmPanelCtrl extends ChartsBuildPanelCtrl {
     updateHeight() {
         // height update for scroll elements
         let elTreeContainer = $('#' + this.pluginId + '-' + this.panel.id + ' .content-header .tree-container')[0];
-        let headerHeight = $(this.elements.tags.contentHeader).prop('clientHeight');
-        let contentWrapWidth = $(this.elements.tags.contentWrap).prop('clientWidth');
-        $(elTreeContainer).css({'max-height': (this.height - headerHeight) +'px'});
-        $(elTreeContainer).css({'max-width': contentWrapWidth +'px'});
-        $(this.elements.tags.contentWrap).css({'height': (this.height - headerHeight) +'px'});
+        this.elements.sizes.contentHeaderHeight = $(this.elements.$tags.contentHeader).outerHeight(true);
+        this.elements.sizes.contentWrapWidth = $(this.elements.$tags.contentWrap).prop('clientWidth');
+        $(elTreeContainer).css({'max-height': (this.height - this.elements.sizes.contentHeaderHeight) +'px'});
+        $(elTreeContainer).css({'max-width': this.elements.sizes.contentWrapWidth +'px'});
+        $(this.elements.$tags.contentWrap).css({'height': (this.height - this.elements.sizes.contentHeaderHeight) +'px'});
     }
 
     convertDataToNestedTree(data) {
@@ -576,9 +576,9 @@ class BpmPanelCtrl extends ChartsBuildPanelCtrl {
                 this.btnShowTree = 'active';                                                // делаем кнопку активной
 
                 // создаём ссылки на основные элементы страницы для работы с ними в дальнейшем
-                this.elements.tags.mainWrap = $('#' + this.pluginId + '-' + this.panel.id)[0];
-                this.elements.tags.contentHeader = $('#' + this.pluginId + '-' + this.panel.id + ' .content-header')[0];
-                this.elements.tags.contentWrap = $('#' + this.pluginId + '-' + this.panel.id + ' .content-wrap')[0];
+                this.elements.$tags.mainWrap = $('#' + this.pluginId + '-' + this.panel.id)[0];
+                this.elements.$tags.contentHeader = $('#' + this.pluginId + '-' + this.panel.id + ' .content-header')[0];
+                this.elements.$tags.contentWrap = $('#' + this.pluginId + '-' + this.panel.id + ' .content-wrap')[0];
                 //this.onPanelSizeChanged();      // height update for scroll elements
             }
             return;
@@ -627,203 +627,17 @@ class BpmPanelCtrl extends ChartsBuildPanelCtrl {
         }
     }
 
-    onRender(action) {
+    onRender() {
         //$(this.panel.mainWrap).closest('.panel-content').css('overflow', 'visible');    // change visibility for parent element of panel
         //console.log('!ON-RENDER', '');
-        this.updateHeight();
+        
+        if (!this.data.values.normalized || _.isEmpty(this.data.values.normalized.counters)) {
+            return;
+        }
 
-        if (!this.data.values.normalized) {
-            return;
-        }
-        if (_.isEmpty(this.data.values.normalized.counters) && !action) {
-            //console.log('ON-RENDER-NODATA');
-            return;
-        }
-        // if (action) {
-        //     this.$log.log('ON-RENDER-BUILD ');
-        //     this.chartBuildSvg(this.data.values.normalized);
-        // }
-        // if (!_.isEmpty(this.data.values.normalized.counters) && !action) {
-        //     this.$log.log('ON-RENDER-UPDATE ');
-        //     this.chartBuildSvg(this.data.values.normalized);
-        // }
         this.$log.log('ON-RENDER');
+        this.updateHeight();
         this.chartBuildSvg(this.data.values.normalized);
-
-/* 
-        //$('.panel-main-wrap').css({'max-height': (this.height) +'px'});
-        if (this.panel.showGraph) {
-            if (!(this.context)) {
-                //console.log('render-no-context');
-                return;
-            }
-            if (!this.data) {
-                //console.log('render-data-empty', this.data);
-                return;
-            }
-
-            //console.log( 'render-data-OK');
-
-            var rect = this.wrap.getBoundingClientRect();
-            var rows = this.data.length;
-            var rowHeight = this.panel.rowHeight;
-
-            var height = rowHeight * rows;
-            var width = rect.width;
-            this.canvas.width = width;
-            this.canvas.height = height;
-            var ctx = this.context;
-            ctx.lineWidth = 1;
-            ctx.textBaseline = 'middle';
-            ctx.font = this.panel.textSize + 'px "Open Sans", Helvetica, Arial, sans-serif';
-
-            // ctx.shadowOffsetX = 1;
-            //  ctx.shadowOffsetY = 1;
-            //  ctx.shadowColor = "rgba(0,0,0,0.3)";
-            //  ctx.shadowBlur = 3;
-
-            var top = 0;
-
-            var elapsed = this.range.to - this.range.from;
-
-            _.forEach(this.data, (metric) => {
-                var centerV = top + (rowHeight / 2);
-                // The no-data line
-                ctx.fillStyle = this.panel.backgroundColor;
-                ctx.fillRect(0, top, width, rowHeight);
-
-                if (!this.panel.writeMetricNames) {
-                    ctx.fillStyle = "#111111";
-                    ctx.textAlign = 'left';
-                    ctx.fillText("No Data", 10, centerV);
-                }
-
-                var lastBS = 0;
-                var point = metric.changes[0];
-
-                for (var i = 0; i < metric.changes.length; i++) {
-                    point = metric.changes[i];
-                    if (point.start <= this.range.to) {
-                        var xt = Math.max(point.start - this.range.from, 0);
-                        // console.log( 'point', point);
-                        point.x = (xt / elapsed) * width;
-                        // ctx.fillStyle = this.getColor( point.val );
-                        ctx.fillStyle = this.panel.setOwnColors ? this.getColor(point) : point.color;
-                        ctx.fillRect(point.x, top, width, rowHeight);
-
-                        if (this.panel.writeAllValues) {
-                            ctx.fillStyle = this.panel.valueTextColor;
-                            ctx.textAlign = 'left';
-                            ctx.fillText(point.val, point.x + 7, centerV);
-                        }
-                        lastBS = point.x;
-                    }
-                }
-
-                if (top > 0) {
-                    ctx.strokeStyle = this.panel.lineColor;
-                    ctx.beginPath();
-                    ctx.moveTo(0, top);
-                    ctx.lineTo(width, top);
-                    ctx.stroke();
-                }
-
-                ctx.fillStyle = "#000000";
-                if (this.panel.writeMetricNames &&
-                    this.mouse.position == null &&
-                    (!this.panel.highlightOnMouseover || this.panel.highlightOnMouseover )
-                ) {
-                    ctx.fillStyle = this.panel.metricNameColor;
-                    ctx.textAlign = 'left';
-                    ctx.fillText(metric.name.split('.').join(' - '), 10, centerV);
-                }
-                ctx.textAlign = 'right';
-                if (this.mouse.down == null) {
-                    // console.log( 'this.mouse.position', this.mouse.position);
-                    if (this.panel.highlightOnMouseover && this.mouse.position != null) {
-                        point = metric.changes[0];
-                        var next = null;
-                        for (var i = 0; i < metric.changes.length; i++) {
-                            if (metric.changes[i].start > this.mouse.position.ts) {
-                                next = metric.changes[i];
-                                break;
-                            }
-                            point = metric.changes[i];
-                        }
-
-                        // Fill canvas using 'destination-out' and alpha at 0.05
-                        ctx.globalCompositeOperation = 'destination-out';
-                        ctx.fillStyle = "rgba(255, 255, 255, 0.5)";
-                        ctx.beginPath();
-                        ctx.fillRect(0, top, point.x, rowHeight);
-                        ctx.fill();
-                        if (next != null) {
-                            ctx.beginPath();
-                            ctx.fillRect(next.x, top, width, rowHeight);
-                            ctx.fill();
-                        }
-                        ctx.globalCompositeOperation = 'source-over';
-
-                        // Now Draw the value
-                        ctx.fillStyle = "#000000";
-                        ctx.textAlign = 'left';
-                        ctx.fillText(point.val, point.x + 7, centerV);
-                    }
-                    else if (this.panel.writeLastValue) {
-                        ctx.fillText(point.val, width - 7, centerV);
-                    }
-                }
-
-                top += rowHeight;
-            });
-
-
-            if (this.mouse.position != null) {
-                if (this.mouse.down != null) {
-                    var xmin = Math.min(this.mouse.position.x, this.mouse.down.x);
-                    var xmax = Math.max(this.mouse.position.x, this.mouse.down.x);
-
-                    // Fill canvas using 'destination-out' and alpha at 0.05
-                    ctx.globalCompositeOperation = 'destination-out';
-                    ctx.fillStyle = "rgba(255, 255, 255, 0.6)";
-                    ctx.beginPath();
-                    ctx.fillRect(0, 0, xmin, height);
-                    ctx.fill();
-
-                    ctx.beginPath();
-                    ctx.fillRect(xmax, 0, width, height);
-                    ctx.fill();
-                    ctx.globalCompositeOperation = 'source-over';
-                }
-                else {
-                    ctx.strokeStyle = '#111';
-                    ctx.beginPath();
-                    ctx.moveTo(this.mouse.position.x, 0);
-                    ctx.lineTo(this.mouse.position.x, height);
-                    ctx.lineWidth = 3;
-                    ctx.stroke();
-
-                    ctx.beginPath();
-                    ctx.moveTo(this.mouse.position.x, 0);
-                    ctx.lineTo(this.mouse.position.x, height);
-                    ctx.strokeStyle = '#e22c14';
-                    ctx.lineWidth = 2;
-                    ctx.stroke();
-                    // если положение курсора находится на другом графике и если рядов больше 1 - показывать точку
-                    if (this.externalPT && rows > 1) {
-                        ctx.beginPath();
-                        ctx.arc(this.mouse.position.x, this.mouse.position.y, 3, 0, 2 * Math.PI, false);
-                        ctx.fillStyle = '#e22c14';
-                        ctx.fill();
-                        ctx.lineWidth = 1;
-                        ctx.strokeStyle = '#111';
-                        ctx.stroke();
-                    }
-                }
-            }
-        } 
-*/
-        //this.tableRender();
     }
 
     // onDataError(err) {

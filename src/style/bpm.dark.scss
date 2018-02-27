@@ -1,6 +1,7 @@
 $tooltip-background: #000000;
 $jstree-background: rgba(41, 41, 41, 0.9);
 $wrapVis-background: rgba(49, 49, 49, 0.5);
+$wrapVis-border: rgba(65, 65, 65, 0.5);
 
 // svg
 $axisLineColor: #ffffff;        // цвет лини осей и тиков
@@ -48,6 +49,7 @@ div.content-wrap {
         position: relative;
         width: 100%;
         margin-bottom: 5px;
+        border: 2px solid $wrapVis-border;
         background: $wrapVis-background;
         /* text-align: center; */
         
@@ -55,7 +57,7 @@ div.content-wrap {
             position: absolute;
         }
 
-        h3.wrap-vis-title {
+        div.wrap-vis-title {
             margin-left: 15px;
             margin-right: 20px;
             // margin-top: 0px;
@@ -63,17 +65,20 @@ div.content-wrap {
             padding-top: 7px;
             text-align: right;
 
-            font.city {
+            span.city {
                 color: #A7D999;
             }
-            font.line {
+            span.line {
                 color: #F6AE66;
             }
-            font.counter {
+            span.counter {
                 color: #a3cae2
             }
-            span.loaded {
+            i.loaded {
                 display: none;
+            }
+            span.title-separator {
+                margin: 0 8px 0 8px;
             }
         }
 
@@ -123,6 +128,10 @@ div.content-wrap {
                 }
             }
         }
+    }
+
+    div.wrap-vis:hover {
+        background-color: rgba(180, 180, 180, 0.1);
     }
 }
 
