@@ -1,6 +1,6 @@
 import { MetricsPanelCtrl } from 'app/plugins/sdk';   // eslint-disable-line
 import _ from 'lodash';
-// import moment from 'moment';
+import moment from 'moment';
 // import angular from 'angular';
 import $ from 'jquery';                               // eslint-disable-line
 import * as d3 from 'd3';                             // eslint-disable-line
@@ -60,14 +60,15 @@ export default class ChartsBuildPanelCtrl extends MetricsPanelCtrl {
     // console.log('GET-MOUSE-POS', evt.currentTarget.getBoundingClientRect(),  evt);
     const elapsed = this.range.to - this.range.from;
     const rect = evt.currentTarget.getBoundingClientRect();
-    const x = evt.offsetX; // - rect.left;
+    // const x = evt.offsetX; // - rect.left;
+    const x = _.round(d3.mouse(evt.currentTarget)[0], 0);
+    const y = _.round(d3.mouse(evt.currentTarget)[1], 0);
     const ts = this.range.from + (elapsed * (x / parseFloat(rect.right - rect.left)));
-    const y = evt.clientY - rect.top; // положение курсора по оси Y относительно елемента
-
+    // const y = evt.clientY - rect.top; // положение курсора по оси Y относительно елемента
     return {
       x,
       y,
-      yRel: y / parseFloat(rect.height), // значение по Y от 0 до 1
+      yRel: _.round(y / parseFloat(rect.height), 2), // значение по Y от 0 до 1
       ts,
       evt,
     };
@@ -161,6 +162,7 @@ export default class ChartsBuildPanelCtrl extends MetricsPanelCtrl {
       .range([0, widthAreaVis]);
 
     const canvasElement = d3.select(document.createElement('canvas'))
+      .datum(dataLine)
       .attr('width', widthAreaVis)
       .attr('height', heightAreaVis);
 
@@ -188,13 +190,16 @@ export default class ChartsBuildPanelCtrl extends MetricsPanelCtrl {
 
       top += heightRowBar;
     });
-    return canvasElement;
+    return canvasElement.node();
   }
 
   cloneCanvas(oldCanvas) {
     // create a new canvas
     const newCanvas = document.createElement('canvas');
     const context = newCanvas.getContext('2d');
+
+    // set data binding
+    d3.select(newCanvas).datum(d3.select(oldCanvas).datum());
 
     // set dimensions
     newCanvas.width = oldCanvas.width;
@@ -210,6 +215,7 @@ export default class ChartsBuildPanelCtrl extends MetricsPanelCtrl {
 
   chartBuildSvg(data) {
     if (data.counters.length === 0) return;
+
     const panelId = this.panel.id;
     const dateFrom = this.range.from.clone();
     const dateTo = this.range.to.clone();
@@ -287,8 +293,6 @@ export default class ChartsBuildPanelCtrl extends MetricsPanelCtrl {
       .selectAll('div.wrap-vis')
       .data(data.counters, fKey)
       .each((dCounter, iCounter, eCounter) => {
-        // console.log('D3-each:', e);
-        // console.log('FORMAT', /* d3.format('.2f')(1) */ Math.round(3.0 * 100) / 100);
         yScale.domain([
           d3.min(dCounter.datapoints.filter(d => !d.fake), d => d.y),
           d3.max(dCounter.datapoints, d => d.y),
@@ -385,15 +389,20 @@ export default class ChartsBuildPanelCtrl extends MetricsPanelCtrl {
 
         // clone and append the background CANVAS chart
         const heightWrapVisTitle = $(wrapVis.select('.wrap-vis-title').node()).outerHeight(true);
-        const canvasOrigEl = renderedCanvasElements[0].el.node();
-        const canvasCopy = d3.select(this.cloneCanvas(canvasOrigEl))
-          .style('margin-left', `${margin.left}px`)
-          .style('margin-top', `${margin.top + heightWrapVisTitle}px`)
-          .style('opacity', '0.3')
-          .node();
-        const wrapEl = wrapVis.node();
-        wrapEl.insertBefore(canvasCopy, wrapEl.children[0]);
-
+        const iCanvas = _.findIndex(renderedCanvasElements, (obj) => {
+          const strLineTargetId = _.split(dCounter.targetId, '.', 2).join('.');
+          return obj.lineId === strLineTargetId;
+        });
+        if (iCanvas !== -1) {
+          const elCanvasOrig = renderedCanvasElements[iCanvas].el;
+          const elCanvasCopy = d3.select(this.cloneCanvas(elCanvasOrig))
+            .style('margin-left', `${margin.left}px`)
+            .style('margin-top', `${margin.top + heightWrapVisTitle}px`)
+            .style('opacity', '0.3')
+            .node();
+          const wrapEl = wrapVis.node();
+          wrapEl.insertBefore(elCanvasCopy, wrapEl.children[0]);
+        }
 
         // append AREA chart
         gSvg.append('g')
@@ -449,72 +458,68 @@ export default class ChartsBuildPanelCtrl extends MetricsPanelCtrl {
             gTooltip.style('display', 'none');
             appEvents.emit('graph-hover-clear');
           })
-          .on('mousemove', (dataC, indx, el) => {
-            // console.log('event', d3.event);
-            const dateFromE = this.range.from.clone();
-            const dateToE = this.range.to.clone();
-            const gSvgE = d3.select(el[indx].parentNode);
-            const rectEl = el[indx];
+          .on('mousemove', (dataBind, index, arrEl) => {
+            // console.log('event', dataBind, index, arrEl);
+            const dateFromEvt = this.range.from.clone();
+            const dateToEvt = this.range.to.clone();
+            const rectEl = arrEl[index];
+            const gSvgEl = d3.select(arrEl[index].parentNode);
             const rectHeight = d3.select(rectEl).attr('height');
             const rectWidth = d3.select(rectEl).attr('width');
 
             const bisectDate = d3.bisector(d => d.t).left;
 
             const xScaleEvt = d3.scaleTime()
-              .domain([new Date(dateFromE).getTime(), new Date(dateToE).getTime()])
+              .domain([new Date(dateFromEvt).getTime(), new Date(dateToEvt).getTime()])
               .rangeRound([0, rectWidth]);
 
             const yScaleEvt = d3.scaleLinear()
               .domain([
-                d3.min(dataC.datapoints.filter(d => !d.fake), d => d.y),
-                d3.max(dataC.datapoints, d => d.y),
+                d3.min(dataBind.datapoints.filter(d => !d.fake), d => d.y),
+                d3.max(dataBind.datapoints, d => d.y),
               ])
               .rangeRound([rectHeight, 0]);
 
-            const dataE = dataC.datapoints;
+            const dataE = dataBind.datapoints;
             const x0 = xScaleEvt.invert(d3.mouse(rectEl)[0]);
             const i = bisectDate(dataE, x0, 1);
             const d0 = dataE[i - 1];
             const d1 = dataE[i];
-
             if (d0 && d1) {
               const dPoint = x0 - d0.t > d1.t - x0 ? d1 : d0;
-              gSvgE.select('.tooltip-point').select('circle')
+
+              gSvgEl.select('.tooltip-point').select('circle')
                 .attr('transform', `translate(${xScaleEvt(dPoint.t)},${yScaleEvt(dPoint.y)})`);
 
-              gSvgE.select('.tooltip-point').select('text')
-                .text(() => dPoint.y)
-                .attr('x', d3.mouse(rectEl)[0] + 15)
-                .attr('y', d3.mouse(rectEl)[1]);
-
-              gSvgE.select('.g-tooltip .tooltip-line')
-                .attr('x1', xScaleEvt(dPoint.t))
+              gSvgEl.select('.g-tooltip .tooltip-line')
+                .attr('x1', d3.mouse(rectEl)[0]/* xScaleEvt(dPoint.t) */)
                 .attr('y1', 0)
-                .attr('x2', xScaleEvt(dPoint.t))
+                .attr('x2', d3.mouse(rectEl)[0]/* xScaleEvt(dPoint.t) */)
                 .attr('y2', rectHeight);
+
+              this.mouse.position = this.getMousePosition(d3.event);
+              const info = {
+                pos: {
+                  pageX: _.round(d3.event.pageX, 0),
+                  pageY: _.round(d3.event.pageY, 0),
+                  ts: this.mouse.position.ts,
+                  x: this.mouse.position.ts,
+                  y: this.mouse.position.y,
+                  panelRelY: this.mouse.position.yRel,
+                },
+                evt: d3.event,
+                panel: this.panel,
+                dPointValue: dPoint, // point of counter value
+              };
+
+              appEvents.emit('graph-hover', info);
             }
 
-            // create and add tooltip
-            this.mouse.position = this.getMousePosition(d3.event);
-            const info = {
-              pos: {
-                pageX: d3.event.pageX,
-                pageY: d3.event.pageY,
-                x: x0,
-                y: d3.mouse(rectEl)[1],
-                panelRelY: this.mouse.position.yRel,
-                // panelRelX: this.mouse.position.xRel
-              },
-              evt: d3.event,
-              panel: this.panel,
-            };
-
-            appEvents.emit('graph-hover', info);
-
-            const pageX = d3.mouse(d3.select('body').node())[0];
-            const pageY = d3.mouse(d3.select('body').node())[1];
-
-            this.$tooltip.html('<span>TOOLTIP</span>').place_tt(pageX + 20, pageY + 5);
+            if (this.mouse.down != null) {
+              d3.select(d3.event.currentTarget).style('cursor', 'col-resize');
+            } else {
+              d3.select(d3.event.currentTarget).style('cursor', 'crosshair');
+            }
           });
       });
   }
@@ -523,53 +528,37 @@ export default class ChartsBuildPanelCtrl extends MetricsPanelCtrl {
   // Mouse Events
   //------------------
 
-  showTooltip(evt, point, isExternal) {
-    /* console.log("showTooltip - point.val", point.val); */
-    let from = point.start;
-    let to = point.start + point.ms;
-    let time = point.ms;  // eslint-disable-line
-    let { val } = point;
+  showTooltip(evt, states, isExternal) {
+    this.showTooltip = this.showTooltip;
 
-    if (this.mouse.down != null) {
-      from = Math.min(this.mouse.down.ts, this.mouse.position.ts);
-      to = Math.max(this.mouse.down.ts, this.mouse.position.ts);
-      time = to - from;
-      val = 'Zoom To:';
-    }
+    const curentDate = evt.pos.ts;
 
-    let body = '<div>';
-    body += `<div style="background-color:${this.getColor(point)}; width:10px; height:10px; display:inline-block;"></div>`
-          + `<b>${val}</b></br>`;
+    const pDate = evt.dPointValue.t;
+    const pCounterVal = evt.dPointValue.y;
 
-    body += `<b style="display: inline-block; width: 40px">From: </b> ${this.dashboard.formatDate(null/* moment(from) */)} <br/>`;
-    body += `<b style="display: inline-block; width: 40px">To: </b> ${this.dashboard.formatDate(null/* moment(to) */)} <br/>`;
-    body += `<b>Duration: </b> ${null/* moment.duration(time).humanize() */} </br>`;
-    body += `<div style="padding:0px 5px; margin:0px; background-color:#00fff0; color:#000"><b> ${point.comment} </b></div>`;
-    body += '</div>';
+    const stateLine = states[1];
+    const brandLine = states[0];
 
-    let pageX = 0;
-    let pageY = 0;
-    if (isExternal) {
-      const rect = this.canvas.getBoundingClientRect();
-      pageY = rect.top + (evt.pos.panelRelY * rect.height);
-      if (pageY < 0 || pageY > $(window).innerHeight()) {
-        // Skip Hidden tooltip
-        this.$tooltip.detach();
-        return;
-      }
-      pageY += $(window).scrollTop();
+    const stateLineColor = _.has(stateLine, 'color') ? stateLine.color : 'gray';
+    const stateLineValue = _.has(stateLine, 'pVal') ? stateLine.pVal : '-';
 
-      const elapsed = this.range.to - this.range.from;
-      const pX = (evt.pos.x - this.range.from) / elapsed;
-      pageX = rect.left + (pX * rect.width);
-    } else {
-      pageX = evt.evt.pageX;  // eslint-disable-line
-      pageY = evt.evt.pageY;  // eslint-disable-line
-    }
+    const brandLineColor = _.has(brandLine, 'color') ? brandLine.color : 'gray';
+    const brandLineValue = _.has(brandLine, 'pVal') ? brandLine.pVal : '-';
+
+    const { pageX, pageY } = evt.evt;
+
+    let body = `<div style="margin:3px; font-weight: 700;">${moment(curentDate).format('YYYY-MM-DD HH:mm:ss.SSS')}</div>`;
+
+    body += `<span>Значение:<i class="fa fa-minus" style="color:rgba(0, 80, 255, 0.4); margin:0 5px 0 5px"></i>${pCounterVal}</span></br>`;
+    body += `<span>Продукт(бренд):<i class="fa fa-square" style="color:${brandLineColor}; margin:0 5px 0 5px"></i>${brandLineValue}</span></br>`;
+    body += `<span>Режим линии:<i class="fa fa-square" style="color:${stateLineColor}; margin:0 5px 0 5px"></i>${stateLineValue}</span></br>`;
+
     this.$tooltip.html(body).place_tt(pageX + 20, pageY + 5);
+    console.log('showTooltip', pDate, pCounterVal, stateLine, brandLine);
   }
 
   binSearchIndexPoint(arrChanges, mouseTimePosition) {
+    this.binSearchIndexPoint = this.binSearchIndexPoint;
     if ((arrChanges.length === 0)
       || (mouseTimePosition < arrChanges[0].start)
       || (mouseTimePosition > arrChanges[arrChanges.length - 1].start)) {
@@ -587,49 +576,28 @@ export default class ChartsBuildPanelCtrl extends MetricsPanelCtrl {
     // Теперь last может указывать на искомый элемент массива.
     if (arrChanges[last].start >= mouseTimePosition) return last - 1;
 
-    return this;
+    return null;
   }
 
   onGraphHover(evt, showTT, isExternal) {
-    /* console.log( 'onGraphHover-evt', evt); */
-    this.externalPT = false;
-    if (this.data) {
-      let hover = null;
-      let j = Math.floor(this.mouse.position.y / this.panel.rowHeight);
-      if (j < 0) {
-        j = 0;
-      }
+    // console.log( 'onGraphHover-evt', this.mouse.position.ts);
 
-      if (j >= this.data.length) {
-        j = this.data.length - 1;
-      }
+    if (evt.evt) {
+      const data = d3.select(evt.evt.target).datum();
+      const hover = [];
 
-      hover = this.data[j].changes[0];  // eslint-disable-line
-
-      // Линейный поиск (менее быстрый)
-      for (let i = 0; i < this.data[j].changes.length; i += 1) {
-        if (this.data[j].changes[i].start > this.mouse.position.ts) {
-          break;
+      _.forEach(data.dataStates, (obj, i) => {
+        // Бинарный поиск (более быстрый)
+        const p = this.binSearchIndexPoint(obj.changes, this.mouse.position.ts);
+        if (p !== null) {
+          hover[i] = obj.changes[p];
         }
-        hover = this.data[j].changes[i];
-      }
-
-      // Бинарный поиск (более быстрый)
-      const i = this.binSearchIndexPoint(this.data[j].changes, this.mouse.position.ts);
-      if (i) {
-        hover = this.data[j].changes[i];
-      }
-      this.hoverPoint = hover;
+      });
 
       if (showTT) {
         this.externalPT = isExternal;
         this.showTooltip(evt, hover, isExternal);
       }
-
-      /* var time = performance.now(); */
-      this.render(); // refresh the view
-      /* time = performance.now() - time;
-             console.log('Время выполнения onRender = ', time); */
     } else {
       this.$tooltip.detach(); // make sure it is hidden
     }
@@ -639,9 +607,9 @@ export default class ChartsBuildPanelCtrl extends MetricsPanelCtrl {
   link(scope/* , elem, attrs, ctrl */) {
     // global events
     appEvents.on('graph-hover', (event) => {
-      // console.log('Calculate mouseInfo', event, this.dashboard.sharedCrosshairModeOnly());
       // ignore other graph hover events if shared tooltip is disabled
       const isThis = event.panel.id === this.panel.id;
+
       if (/* !this.dashboard.sharedTooltipModeEnabled() && */ !isThis) { // without any shared
         return;
       }
@@ -672,7 +640,7 @@ export default class ChartsBuildPanelCtrl extends MetricsPanelCtrl {
                 //console.log( "Calculate mouseInfo", event, this.mouse.position);
             } */
 
-      // this.onGraphHover(event, isThis || !this.dashboard.sharedCrosshairModeOnly(), !isThis);
+      this.onGraphHover(event, isThis || !this.dashboard.sharedCrosshairModeOnly(), !isThis);
     }, scope);
 
     appEvents.on('graph-hover-clear', (/* event, info */) => {

@@ -114,6 +114,7 @@ div.content-wrap {
                 .tooltip-line {
                     stroke: $tooltipLineColor;
                     stroke-width: 1px;
+                    shape-rendering: crispEdges;
                     /* stroke-dasharray: 3,3; */
                 }
             }

@@ -13,7 +13,7 @@ import $ from 'jquery';   // eslint-disable-line
 import appEvents from 'app/core/app_events';      // eslint-disable-line
 import { loadPluginCss } from 'app/plugins/sdk';  // eslint-disable-line
 import * as hash from './lib/hash/object_hash';
-// import * as d3 from 'd3';
+import * as d3 from 'd3';                         // eslint-disable-line
 
 
 loadPluginCss({
@@ -164,19 +164,29 @@ class BpmPanelCtrl extends ChartsBuildPanelCtrl {
 
   onPanelSizeChanged() {
     // console.log('RESAZE-PANEL-DONE');
-    this.updateHeight();
+    this.updateScrollSizeElements();
     return this;
   }
 
-  updateHeight() {
-    // height update for scroll elements
-    const elTreeContainer = $(`#${this.pluginId}-${this.panel.id} .content-header .tree-container`)[0];
-    this.elements.sizes.contentHeaderHeight = $(this.elements.$tags.contentHeader)
-      .outerHeight(true);
-    this.elements.sizes.contentWrapWidth = $(this.elements.$tags.contentWrap).prop('clientWidth');
-    $(elTreeContainer).css({ 'max-height': `${this.height - this.elements.sizes.contentHeaderHeight}px` });
-    $(elTreeContainer).css({ 'max-width': `${this.elements.sizes.contentWrapWidth}px` });
-    $(this.elements.$tags.contentWrap).css({ height: `${this.height - this.elements.sizes.contentHeaderHeight}px` });
+  updateScrollSizeElements() {
+    const tags = this.elements.$tags;
+    const sizesEl = this.elements.sizes;
+
+    const d3MainWrap = d3.select(`#${this.pluginId}-${this.panel.id}`);
+    const d3ContentHeader = d3MainWrap.select('.content-header');
+    const d3ContentWrap = d3MainWrap.select('.content-wrap');
+    const d3TreeContainer = d3ContentHeader.select('.tree-container');
+    tags.mainWrap = d3MainWrap.node();
+    tags.contentHeader = d3ContentHeader.node();
+    tags.contentWrap = d3ContentWrap.node();
+    tags.treeContainer = d3TreeContainer.node();
+
+    // update height for scroll elements
+    sizesEl.contentHeaderHeight = $(tags.contentHeader).outerHeight(true);
+    sizesEl.contentWrapWidth = $(tags.contentWrap).prop('clientWidth');
+    d3TreeContainer.style('max-height', `${this.height - sizesEl.contentHeaderHeight}px`);
+    d3TreeContainer.style('max-width', `${sizesEl.contentWrapWidth}px`);
+    d3ContentWrap.style('height', `${this.height - sizesEl.contentHeaderHeight}px`);
   }
 
   convertDataToNestedTree(data) {
@@ -291,12 +301,13 @@ class BpmPanelCtrl extends ChartsBuildPanelCtrl {
   }
 
   jsTreeBuildAction(treeData, datasource) {
+    this.updateScrollSizeElements();
     // отключаем скрытие меню после нажатия
     // (для мобильных в css убираем div с классом .dropdown-backdrop)
-    $(`#jsTree-${this.panel.id}`).on('click', e => $(e.target).hasClass('tree-container') && e.stopPropagation());
+    $(this.elements.$tags.treeContainer).on('click', e => $(e.target).hasClass('tree-container') && e.stopPropagation());
     // var $treeview = $("#jsTree");
     if (_.isEmpty(this.treeObject)) {
-      this.treeObject = $(`#jsTree-${this.panel.id}`);
+      this.treeObject = $(this.elements.$tags.treeContainer);
       this.treeObject.jstree({
         core: {
           data: treeData, // данные дерева
@@ -328,7 +339,8 @@ class BpmPanelCtrl extends ChartsBuildPanelCtrl {
           const state = Object.assign({}, this.panel.treeState);
           // возобновляем состояние дерева (вызывает событие set_state):
           data.instance.set_state(state);
-          this.updateHeight();
+          this.btnShowTree = 'active'; // делаем кнопку активной
+          this.$scope.$digest();
         })
         // event changed selection
         .on('changed.jstree', (e, data) => {
@@ -528,6 +540,17 @@ class BpmPanelCtrl extends ChartsBuildPanelCtrl {
     };
   }
 
+  getLineTargetId(counterTargetId) {
+    this.getLineTargetId = this.getLineTargetId; // for eslint
+    return _.split(counterTargetId, '.', 2).join('.');
+  }
+
+  getCityTargetId(counterTargetId) {
+    this.getCityTargetId = this.getCityTargetId; // for eslint
+    const i = 0;
+    return _.split(counterTargetId, '.')[i];
+  }
+
   onDataReceived(dataReceived) {
     // $('svg').css('cursor', 'pointer');
     // обработка данных дерева и построение дерева
@@ -547,16 +570,6 @@ class BpmPanelCtrl extends ChartsBuildPanelCtrl {
           this.panel.selectedLinesId = [];
         }
         this.jsTreeBuildAction(this.data.orgStructure.converted, this.datasource); // строим дерево
-        this.btnShowTree = 'active'; // делаем кнопку активной
-
-        // создаём ссылки на основные элементы страницы для работы с ними в дальнейшем
-        const mainWrap = $(`#${this.pluginId}-${this.panel.id}`)[0];
-        const contentHeader = $(`#${this.pluginId}-${this.panel.id} .content-header`)[0];
-        const contentWrap = $(`#${this.pluginId}-${this.panel.id} .content-wrap`)[0];
-        this.elements.$tags.mainWrap = mainWrap;
-        this.elements.$tags.contentHeader = contentHeader;
-        this.elements.$tags.contentWrap = contentWrap;
-        // this.onPanelSizeChanged();      // height update for scroll elements
       }
       // return null;
     } else if ('brandsLines' in dataReceived && 'statusLines' in dataReceived && 'counters' in dataReceived) {
@@ -597,6 +610,27 @@ class BpmPanelCtrl extends ChartsBuildPanelCtrl {
         const numVal = this.panel.selectedCountersId.indexOf(counter.target);
         if (numVal > -1) {
           this.data.values.normalized.counters[numVal] = this.normalizeDataCounter(counter);
+          const normDataCounter = this.data.values.normalized.counters[numVal];
+
+          // combining the data counter with states data
+          const statesLinesArr = this.data.values.normalized.statusLines;
+          const brandsLinesArr = this.data.values.normalized.brandsLines;
+
+          const lineTargetId = this.getLineTargetId(normDataCounter.targetId);
+
+          const brandsLineObj = _.filter(brandsLinesArr, (dataBrands) => {
+            const eq = (lineTargetId === dataBrands.targetId);
+            return eq;
+          })[0];
+
+          const statesLineObj = _.filter(statesLinesArr, (dataStates) => {
+            const eq = (lineTargetId === dataStates.targetId);
+            return eq;
+          })[0];
+
+          normDataCounter.dataStates = [];
+          normDataCounter.dataStates.push(brandsLineObj);
+          normDataCounter.dataStates.push(statesLineObj);
         }
       });
       this.onRender('update');
@@ -611,7 +645,7 @@ class BpmPanelCtrl extends ChartsBuildPanelCtrl {
     }
 
     this.$log.log('ON-RENDER');
-    this.updateHeight();
+    this.updateScrollSizeElements();
     this.chartBuildSvg(this.data.values.normalized);
     return this;
   }
