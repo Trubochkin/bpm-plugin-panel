@@ -471,8 +471,8 @@ class BpmPanelCtrl extends ChartsBuildPanelCtrl {
     return datasource.query(dataUserRequest, '/query/tree')
       .catch((err) => {
         // this.error = err.data.error + " [" + err.status + "]";
-        this.alertSrv.set('Error', 'Data of "counters tree" wasn\'t loaded', 'warning', 6000); // error, warning, success, info
-        this.$log.warn('Data of counters tree wasn\'t loaded', err);
+        this.alertSrv.set('Error', 'The org structure wasn\'t loaded', 'warning', 6000); // error, warning, success, info
+        this.$log.warn('The org structure wasn\'t loaded', err);
       });
   }
 

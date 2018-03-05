@@ -141,7 +141,7 @@ export default class ChartsBuildPanelCtrl extends MetricsPanelCtrl {
   }
 
   // dataLine = [[changes1], [changes2], ...]
-  drawCanvas(dataLine) {
+  drawCanvas(arrData) {
     const W = +this.elements.$tags.contentWrap.getBoundingClientRect().width;
     const H = +this.panel.svgHeight;
     const dateFrom = this.range.from.clone();
@@ -151,7 +151,7 @@ export default class ChartsBuildPanelCtrl extends MetricsPanelCtrl {
     const margin = this.elements.sizes.marginAreaVis;
     const widthAreaVis = W - margin.left - margin.right;
     const heightAreaVis = H - margin.top - margin.bottom;
-    const heightRowBar = parseInt(heightAreaVis / dataLine.length, 10);
+    const heightRowBar = parseInt(heightAreaVis / arrData.length, 10);
 
     const xScaleDuration = d3.scaleTime()
       .domain([0, new Date(dateTo).getTime() - new Date(dateFrom).getTime()])
@@ -162,7 +162,7 @@ export default class ChartsBuildPanelCtrl extends MetricsPanelCtrl {
       .range([0, widthAreaVis]);
 
     const canvasElement = d3.select(document.createElement('canvas'))
-      .datum(dataLine)
+      .datum(arrData) // data binding
       .attr('width', widthAreaVis)
       .attr('height', heightAreaVis);
 
@@ -174,15 +174,16 @@ export default class ChartsBuildPanelCtrl extends MetricsPanelCtrl {
     context.fill();
 
     let top = 0;
+    const sizeDiv = 1; // dividing line
 
-    _.forEach(dataLine, (changes) => {
+    _.forEach(arrData, (changes, i, arr) => {
       _.forEach(changes, (d) => {
         context.beginPath();
         context.fillStyle = d.color;
         context.rect(
           xScaleTime(d.start) < 0 ? 0 : xScaleTime(d.start),
           top, xScaleDuration(d.ms),
-          heightRowBar,
+          arr.length - 1 !== i ? heightRowBar - sizeDiv : heightRowBar,
         );
         context.fill();
         context.closePath();
@@ -268,7 +269,27 @@ export default class ChartsBuildPanelCtrl extends MetricsPanelCtrl {
     // .tickFormat(d3.timeFormat('%H %M'));
 
     const yAxis = d3.axisLeft()
-      .scale(yScale);
+      .scale(yScale)
+      .ticks(Math.round(height / 20))
+      .tickFormat((d) => {
+        const array = ['', 'K', 'M', 'G', 'T', 'P'];
+        let i = 0;
+        let dC = d;
+        if (dC >= 0) {
+          while (dC >= 1000) {
+            i += 1;
+            dC /= 1000;
+          }
+        } else {
+          while (dC <= -1000) {
+            i += 1;
+            dC /= 1000;
+          }
+        }
+
+        dC = `${dC} ${array[i]}`;
+        return dC;
+      });
     // d3.format(".2s")(42e6);
 
     // Area of chart
@@ -528,12 +549,12 @@ export default class ChartsBuildPanelCtrl extends MetricsPanelCtrl {
   // Mouse Events
   //------------------
 
-  showTooltip(evt, states, isExternal) {
+  showTooltip(evt, states/* , isExternal */) {
     this.showTooltip = this.showTooltip;
 
     const curentDate = evt.pos.ts;
 
-    const pDate = evt.dPointValue.t;
+    // const pDate = evt.dPointValue.t;
     const pCounterVal = evt.dPointValue.y;
 
     const stateLine = states[1];
@@ -549,12 +570,12 @@ export default class ChartsBuildPanelCtrl extends MetricsPanelCtrl {
 
     let body = `<div style="margin:3px; font-weight: 700;">${moment(curentDate).format('YYYY-MM-DD HH:mm:ss.SSS')}</div>`;
 
-    body += `<span>Значение:<i class="fa fa-minus" style="color:rgba(0, 80, 255, 0.4); margin:0 5px 0 5px"></i>${pCounterVal}</span></br>`;
-    body += `<span>Продукт(бренд):<i class="fa fa-square" style="color:${brandLineColor}; margin:0 5px 0 5px"></i>${brandLineValue}</span></br>`;
-    body += `<span>Режим линии:<i class="fa fa-square" style="color:${stateLineColor}; margin:0 5px 0 5px"></i>${stateLineValue}</span></br>`;
+    body += `<i class="fa fa-minus" style="color:rgba(0, 80, 255, 0.4); margin:0 5px 0 5px"></i><span>Значение: ${pCounterVal}</span></br>`;
+    body += `<i class="fa fa-square" style="color:${brandLineColor}; margin:0 5px 0 5px"></i><span>Продукт(бренд): ${brandLineValue}</span></br>`;
+    body += `<i class="fa fa-square" style="color:${stateLineColor}; margin:0 5px 0 5px"></i><span>Режим линии: ${stateLineValue}</span></br>`;
 
     this.$tooltip.html(body).place_tt(pageX + 20, pageY + 5);
-    console.log('showTooltip', pDate, pCounterVal, stateLine, brandLine);
+    // console.log('showTooltip', pDate, pCounterVal, stateLine, brandLine);
   }
 
   binSearchIndexPoint(arrChanges, mouseTimePosition) {

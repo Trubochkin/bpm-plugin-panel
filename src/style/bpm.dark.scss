@@ -23,6 +23,7 @@ div.content-header {
     display: flex;
     flex-direction: row;
     justify-content: flex-start;
+    margin-bottom: 5px;
     // для корректой работы выпадающего дерева на мобильных устройствах
     div.btn-group.open .dropdown-backdrop {
         display:none;
